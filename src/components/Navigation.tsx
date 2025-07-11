@@ -1,7 +1,7 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Menu, X, Calendar, Users, MapPin, AlertTriangle, Home } from "lucide-react";
+import { Menu, X, Calendar, Users, MapPin, AlertTriangle, Home, GraduationCap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate, useLocation } from "react-router-dom";
 
@@ -21,22 +21,27 @@ const Navigation = () => {
   const isActive = (path: string) => location.pathname === path;
 
   return (
-    <nav className="bg-white/95 backdrop-blur-md shadow-lg sticky top-0 z-50">
+    <nav className="bg-card/95 backdrop-blur-md shadow-lg sticky top-0 z-50 border-b border-border">
       <div className="container mx-auto px-4">
-        <div className="flex justify-between items-center h-16">
-          {/* Logo */}
+        <div className="flex justify-between items-center h-20">
+          {/* SKCT Logo and Branding */}
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
-            className="flex items-center space-x-2 cursor-pointer"
+            className="flex items-center space-x-4 cursor-pointer"
             onClick={() => navigate("/")}
           >
-            <div className="bg-indigo-600 p-2 rounded-lg">
-              <Calendar className="h-6 w-6 text-white" />
+            <div className="bg-primary p-3 rounded-xl shadow-lg">
+              <GraduationCap className="h-8 w-8 text-primary-foreground" />
             </div>
-            <span className="font-bold text-xl text-gray-800 hidden sm:block">
-              AU Timetable
-            </span>
+            <div className="hidden sm:block">
+              <h1 className="font-montserrat font-bold text-xl text-accent">
+                Sri Krishna College of Technology
+              </h1>
+              <p className="text-sm text-muted-foreground">
+                Autonomous | Affiliated to Anna University | NIRF Rank 83 (2024)
+              </p>
+            </div>
           </motion.div>
 
           {/* Desktop Navigation */}
@@ -53,8 +58,8 @@ const Navigation = () => {
                   onClick={() => navigate(item.path)}
                   className={`flex items-center space-x-2 transition-all duration-200 ${
                     isActive(item.path)
-                      ? "bg-indigo-600 hover:bg-indigo-700 text-white"
-                      : "hover:bg-indigo-50 text-gray-700"
+                      ? "bg-primary hover:bg-primary/90 text-primary-foreground"
+                      : "hover:bg-accent/10 text-foreground hover:text-accent"
                   }`}
                 >
                   <item.icon className="h-4 w-4" />
@@ -70,7 +75,7 @@ const Navigation = () => {
               variant="ghost"
               size="sm"
               onClick={() => setIsOpen(!isOpen)}
-              className="p-2"
+              className="p-2 text-foreground hover:text-accent"
             >
               {isOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
             </Button>
@@ -94,8 +99,8 @@ const Navigation = () => {
                 }}
                 className={`w-full justify-start space-x-2 ${
                   isActive(item.path)
-                    ? "bg-indigo-600 hover:bg-indigo-700 text-white"
-                    : "hover:bg-indigo-50 text-gray-700"
+                    ? "bg-primary hover:bg-primary/90 text-primary-foreground"
+                    : "hover:bg-accent/10 text-foreground hover:text-accent"
                 }`}
               >
                 <item.icon className="h-4 w-4" />
