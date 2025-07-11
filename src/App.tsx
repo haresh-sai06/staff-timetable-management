@@ -6,6 +6,9 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { motion } from "framer-motion";
 import Index from "./pages/Index";
+import Login from "./pages/Login";
+import Profile from "./pages/Profile";
+import Issues from "./pages/Issues";
 import TimetableView from "./pages/TimetableView";
 import StaffManagement from "./pages/StaffManagement";
 import ClassroomManagement from "./pages/ClassroomManagement";
@@ -28,6 +31,9 @@ const App = () => (
         >
           <Routes>
             <Route path="/" element={<Index />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/issues" element={<Issues />} />
             <Route path="/timetable" element={<TimetableView />} />
             <Route path="/staff" element={<StaffManagement />} />
             <Route path="/classrooms" element={<ClassroomManagement />} />

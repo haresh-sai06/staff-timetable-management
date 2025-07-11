@@ -1,14 +1,26 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Menu, X, Calendar, Users, MapPin, AlertTriangle, Home, GraduationCap } from "lucide-react";
+import { Menu, X, Calendar, Users, MapPin, AlertTriangle, Home, GraduationCap, User, LogOut, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate, useLocation } from "react-router-dom";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { useToast } from "@/hooks/use-toast";
 
 const Navigation = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [userName, setUserName] = useState("");
   const navigate = useNavigate();
   const location = useLocation();
+  const { toast } = useToast();
+
+  useEffect(() => {
+    const token = localStorage.getItem("userToken");
+    const name = localStorage.getItem("userName");
+    setIsAuthenticated(!!token);
+    setUserName(name || "User");
+  }, [location]);
 
   const navItems = [
     { icon: Home, label: "Home", path: "/" },
@@ -16,9 +28,33 @@ const Navigation = () => {
     { icon: Users, label: "Staff", path: "/staff" },
     { icon: MapPin, label: "Classrooms", path: "/classrooms" },
     { icon: AlertTriangle, label: "Conflicts", path: "/conflicts" },
+    { icon: MessageSquare, label: "Issues", path: "/issues" },
   ];
 
   const isActive = (path: string) => location.pathname === path;
+
+  const handleLogout = () => {
+    localStorage.removeItem("userToken");
+    localStorage.removeItem("userRole");
+    localStorage.removeItem("userEmail");
+    localStorage.removeItem("userName");
+    setIsAuthenticated(false);
+    toast({
+      title: "Logged out",
+      description: "You have been successfully logged out",
+    });
+    navigate("/login");
+  };
+
+  const handleProfileClick = () => {
+    navigate("/profile");
+    setIsOpen(false);
+  };
+
+  const handleLoginClick = () => {
+    navigate("/login");
+    setIsOpen(false);
+  };
 
   return (
     <nav className="bg-card/95 backdrop-blur-md shadow-lg sticky top-0 z-50 border-b border-border">
@@ -45,7 +81,8 @@ const Navigation = () => {
           </motion.div>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex space-x-1">
+          <div className="hidden md:flex items-center space-x-1">
+            {/* Navigation Items */}
             {navItems.map((item, index) => (
               <motion.div
                 key={item.path}
@@ -67,6 +104,43 @@ const Navigation = () => {
                 </Button>
               </motion.div>
             ))}
+
+            {/* Profile/Login Section */}
+            <div className="ml-4 flex items-center space-x-2">
+              {isAuthenticated ? (
+                <>
+                  <Button
+                    variant="ghost"
+                    onClick={handleProfileClick}
+                    className="flex items-center space-x-2 hover:bg-accent/10 text-accent hover:text-accent/80"
+                  >
+                    <Avatar className="h-6 w-6">
+                      <AvatarImage src="" alt={userName} />
+                      <AvatarFallback className="bg-accent text-accent-foreground text-xs">
+                        {userName.charAt(0).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="text-sm">{userName}</span>
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    onClick={handleLogout}
+                    className="text-muted-foreground hover:text-destructive"
+                    size="sm"
+                  >
+                    <LogOut className="h-4 w-4" />
+                  </Button>
+                </>
+              ) : (
+                <Button
+                  onClick={handleLoginClick}
+                  className="bg-accent hover:bg-accent/90 text-accent-foreground"
+                >
+                  <User className="h-4 w-4 mr-2" />
+                  Login
+                </Button>
+              )}
+            </div>
           </div>
 
           {/* Mobile Menu Button */}
@@ -107,6 +181,38 @@ const Navigation = () => {
                 <span>{item.label}</span>
               </Button>
             ))}
+
+            {/* Mobile Profile/Login */}
+            <div className="border-t border-border pt-2 mt-2">
+              {isAuthenticated ? (
+                <>
+                  <Button
+                    variant="ghost"
+                    onClick={handleProfileClick}
+                    className="w-full justify-start space-x-2 text-accent hover:text-accent/80"
+                  >
+                    <User className="h-4 w-4" />
+                    <span>Profile ({userName})</span>
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    onClick={handleLogout}
+                    className="w-full justify-start space-x-2 text-destructive hover:text-destructive/80"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    <span>Logout</span>
+                  </Button>
+                </>
+              ) : (
+                <Button
+                  onClick={handleLoginClick}
+                  className="w-full justify-start space-x-2 bg-accent hover:bg-accent/90 text-accent-foreground"
+                >
+                  <User className="h-4 w-4" />
+                  <span>Login</span>
+                </Button>
+              )}
+            </div>
           </div>
         </motion.div>
       </div>
