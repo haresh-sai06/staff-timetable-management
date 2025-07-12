@@ -1,5 +1,4 @@
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Users, Plus, Search, Edit, Trash2, Clock, Award } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -23,6 +22,12 @@ interface Staff {
 const StaffManagement = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedDepartment, setSelectedDepartment] = useState("all");
+  const [userRole, setUserRole] = useState("");
+
+  useEffect(() => {
+    const role = localStorage.getItem("userRole");
+    setUserRole(role || "");
+  }, []);
 
   const staffData: Staff[] = [
     {
@@ -98,8 +103,10 @@ const StaffManagement = () => {
     return "bg-green-100";
   };
 
+  const isAdmin = userRole === "admin";
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+    <div className="min-h-screen">
       <Navigation />
       
       <div className="container mx-auto px-4 py-8">
@@ -110,16 +117,18 @@ const StaffManagement = () => {
           className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8"
         >
           <div>
-            <h1 className="text-3xl font-bold text-gray-800 mb-2">Staff Management</h1>
-            <p className="text-gray-600">
-              Manage faculty workload, roles, and assignments for Anna University departments
+            <h1 className="text-3xl font-bold text-foreground mb-2 font-montserrat">Staff Management</h1>
+            <p className="text-muted-foreground">
+              {isAdmin ? "Manage faculty workload, roles, and assignments for Anna University departments" : "View faculty information and workload for Anna University departments"}
             </p>
           </div>
           <div className="flex gap-2 mt-4 md:mt-0">
-            <Button className="bg-indigo-600 hover:bg-indigo-700">
-              <Plus className="h-4 w-4 mr-2" />
-              Add Staff
-            </Button>
+            {isAdmin && (
+              <Button className="bg-accent hover:bg-accent/90 text-accent-foreground">
+                <Plus className="h-4 w-4 mr-2" />
+                Add Staff
+              </Button>
+            )}
           </div>
         </motion.div>
 
@@ -130,57 +139,57 @@ const StaffManagement = () => {
           transition={{ delay: 0.1 }}
           className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8"
         >
-          <Card>
+          <Card className="bg-card/80 border-border">
             <CardContent className="p-6">
               <div className="flex items-center space-x-2">
-                <Users className="h-8 w-8 text-blue-600" />
+                <Users className="h-8 w-8 text-accent" />
                 <div>
-                  <p className="text-2xl font-bold text-gray-800">
+                  <p className="text-2xl font-bold text-foreground">
                     {staffData.filter(s => s.isActive).length}
                   </p>
-                  <p className="text-gray-600">Active Staff</p>
+                  <p className="text-muted-foreground">Active Staff</p>
                 </div>
               </div>
             </CardContent>
           </Card>
           
-          <Card>
+          <Card className="bg-card/80 border-border">
             <CardContent className="p-6">
               <div className="flex items-center space-x-2">
-                <Award className="h-8 w-8 text-purple-600" />
+                <Award className="h-8 w-8 text-accent" />
                 <div>
-                  <p className="text-2xl font-bold text-gray-800">
+                  <p className="text-2xl font-bold text-foreground">
                     {staffData.filter(s => s.role === "Prof").length}
                   </p>
-                  <p className="text-gray-600">Professors</p>
+                  <p className="text-muted-foreground">Professors</p>
                 </div>
               </div>
             </CardContent>
           </Card>
           
-          <Card>
+          <Card className="bg-card/80 border-border">
             <CardContent className="p-6">
               <div className="flex items-center space-x-2">
-                <Users className="h-8 w-8 text-green-600" />
+                <Users className="h-8 w-8 text-accent" />
                 <div>
-                  <p className="text-2xl font-bold text-gray-800">
+                  <p className="text-2xl font-bold text-foreground">
                     {staffData.filter(s => s.role === "AsstProf").length}
                   </p>
-                  <p className="text-gray-600">Asst. Professors</p>
+                  <p className="text-muted-foreground">Asst. Professors</p>
                 </div>
               </div>
             </CardContent>
           </Card>
           
-          <Card>
+          <Card className="bg-card/80 border-border">
             <CardContent className="p-6">
               <div className="flex items-center space-x-2">
-                <Clock className="h-8 w-8 text-orange-600" />
+                <Clock className="h-8 w-8 text-accent" />
                 <div>
-                  <p className="text-2xl font-bold text-gray-800">
+                  <p className="text-2xl font-bold text-foreground">
                     {staffData.filter(s => s.currentHours >= s.maxHours * 0.9).length}
                   </p>
-                  <p className="text-gray-600">Near Limit</p>
+                  <p className="text-muted-foreground">Near Limit</p>
                 </div>
               </div>
             </CardContent>
@@ -195,18 +204,18 @@ const StaffManagement = () => {
           className="flex flex-col md:flex-row gap-4 mb-6"
         >
           <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Search staff by name or email..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10"
+              className="w-full pl-10 bg-card/80 border-border"
             />
           </div>
           <select
             value={selectedDepartment}
             onChange={(e) => setSelectedDepartment(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="px-3 py-2 border border-border rounded-md bg-card/80 text-foreground focus:outline-none focus:ring-2 focus:ring-accent"
           >
             {departments.map((dept) => (
               <option key={dept} value={dept}>
@@ -231,28 +240,30 @@ const StaffManagement = () => {
               transition={{ delay: index * 0.1 }}
               whileHover={{ scale: 1.02 }}
             >
-              <Card className="h-full hover:shadow-lg transition-shadow">
+              <Card className="h-full hover:shadow-lg transition-shadow bg-card/80 border-border">
                 <CardHeader className="pb-4">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
-                      <CardTitle className="text-lg">{staff.name}</CardTitle>
-                      <p className="text-sm text-gray-600">{staff.email}</p>
+                      <CardTitle className="text-lg text-foreground">{staff.name}</CardTitle>
+                      <p className="text-sm text-muted-foreground">{staff.email}</p>
                     </div>
-                    <div className="flex gap-1">
-                      <Button variant="ghost" size="sm">
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700">
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
+                    {isAdmin && (
+                      <div className="flex gap-1">
+                        <Button variant="ghost" size="sm" className="hover:bg-accent/10">
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50">
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 </CardHeader>
                 
                 <CardContent className="space-y-4">
                   {/* Department and Role */}
                   <div className="flex items-center justify-between">
-                    <Badge variant="outline" className="bg-gray-100">
+                    <Badge variant="outline" className="bg-muted border-border">
                       {staff.department}
                     </Badge>
                     <Badge className={getRoleColor(staff.role)}>
@@ -284,10 +295,10 @@ const StaffManagement = () => {
 
                   {/* Subjects */}
                   <div>
-                    <p className="text-sm font-medium text-gray-700 mb-2">Assigned Subjects:</p>
+                    <p className="text-sm font-medium text-foreground mb-2">Assigned Subjects:</p>
                     <div className="flex flex-wrap gap-1">
                       {staff.subjects.map((subject, idx) => (
-                        <Badge key={idx} variant="secondary" className="text-xs">
+                        <Badge key={idx} variant="secondary" className="text-xs bg-muted text-muted-foreground">
                           {subject}
                         </Badge>
                       ))}
@@ -296,12 +307,14 @@ const StaffManagement = () => {
 
                   {/* Actions */}
                   <div className="flex gap-2 pt-2">
-                    <Button variant="outline" size="sm" className="flex-1">
+                    <Button variant="outline" size="sm" className="flex-1 border-border hover:bg-accent/10">
                       View Schedule
                     </Button>
-                    <Button variant="outline" size="sm" className="flex-1">
-                      Assign Subject
-                    </Button>
+                    {isAdmin && (
+                      <Button variant="outline" size="sm" className="flex-1 border-border hover:bg-accent/10">
+                        Assign Subject
+                      </Button>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -316,9 +329,9 @@ const StaffManagement = () => {
             animate={{ opacity: 1 }}
             className="text-center py-12"
           >
-            <Users className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-gray-700 mb-2">No staff members found</h3>
-            <p className="text-gray-500">Try adjusting your search criteria or add new staff members.</p>
+            <Users className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-foreground mb-2">No staff members found</h3>
+            <p className="text-muted-foreground">Try adjusting your search criteria or add new staff members.</p>
           </motion.div>
         )}
       </div>

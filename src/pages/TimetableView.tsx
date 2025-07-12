@@ -1,14 +1,17 @@
 
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Calendar, Filter, Plus, Download, Eye } from "lucide-react";
+import { Calendar, Filter, Plus, Download, Eye, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Navigation from "@/components/Navigation";
 import TimetableGrid from "@/components/TimetableGrid";
 import TimetableFilters from "@/components/TimetableFilters";
 import AddTimetableEntry from "@/components/AddTimetableEntry";
+import StaffSearchBar from "@/components/StaffSearchBar";
+import StaffSearchResults from "@/components/StaffSearchResults";
+import DepartmentYearTimetable from "@/components/DepartmentYearTimetable";
 
 const TimetableView = () => {
   const [selectedDepartment, setSelectedDepartment] = useState("CSE");
@@ -16,6 +19,9 @@ const TimetableView = () => {
   const [viewMode, setViewMode] = useState("department"); // department, staff, general
   const [showAddEntry, setShowAddEntry] = useState(false);
   const [userRole, setUserRole] = useState("");
+  const [activeTab, setActiveTab] = useState("grid");
+  const [searchResults, setSearchResults] = useState(null);
+  const [isSearching, setIsSearching] = useState(false);
 
   useEffect(() => {
     const role = localStorage.getItem("userRole");
@@ -42,6 +48,64 @@ const TimetableView = () => {
   ];
 
   const isAdmin = userRole === "admin";
+
+  const handleStaffSearch = async (query: string) => {
+    setIsSearching(true);
+    // Simulate API call - replace with actual API call
+    setTimeout(() => {
+      const mockResults = {
+        staff: {
+          id: "1",
+          name: query,
+          department: "CSE",
+          role: "AsstProf",
+          email: "staff@skct.edu",
+          currentHours: 15,
+          maxHours: 18
+        },
+        timetables: [
+          {
+            id: "1",
+            subject: "Data Structures",
+            subjectCode: "CS8391",
+            day: "Monday",
+            timeSlot: "09:00-10:00",
+            classroom: "CSE-101",
+            studentGroup: "CSE-3A",
+            department: "CSE",
+            year: "3rd",
+            semester: "odd"
+          }
+        ],
+        reports: [
+          {
+            id: "1",
+            issueType: "Timetable Conflict",
+            description: "Overlapping classes reported",
+            status: "pending",
+            createdAt: "2024-01-15"
+          }
+        ],
+        conflicts: [
+          {
+            id: "1",
+            type: "Schedule Overlap",
+            description: "Multiple classes scheduled at same time",
+            severity: "high",
+            status: "unresolved"
+          }
+        ]
+      };
+      setSearchResults(mockResults);
+      setIsSearching(false);
+      setActiveTab("search");
+    }, 1000);
+  };
+
+  const handleClearSearch = () => {
+    setSearchResults(null);
+    setActiveTab("grid");
+  };
 
   return (
     <div className="min-h-screen">
@@ -77,38 +141,80 @@ const TimetableView = () => {
           </div>
         </motion.div>
 
-        {/* Filters */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-        >
-          <TimetableFilters
-            selectedDepartment={selectedDepartment}
-            setSelectedDepartment={setSelectedDepartment}
-            selectedSemester={selectedSemester}
-            setSelectedSemester={setSelectedSemester}
-            viewMode={viewMode}
-            setViewMode={setViewMode}
-            departments={departments}
-            semesters={semesters}
-            viewModes={viewModes}
-          />
-        </motion.div>
+        {/* Staff Search Bar */}
+        <StaffSearchBar onSearch={handleStaffSearch} onClear={handleClearSearch} />
 
-        {/* Timetable Grid */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="mt-8"
-        >
-          <TimetableGrid
-            department={selectedDepartment}
-            semester={selectedSemester}
-            viewMode={viewMode}
-          />
-        </motion.div>
+        {/* Main Content Tabs */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="grid" className="flex items-center space-x-2">
+              <Eye className="h-4 w-4" />
+              <span>Grid View</span>
+            </TabsTrigger>
+            <TabsTrigger value="department-year" className="flex items-center space-x-2">
+              <Calendar className="h-4 w-4" />
+              <span>Department by Year</span>
+            </TabsTrigger>
+            <TabsTrigger value="search" disabled={!searchResults} className="flex items-center space-x-2">
+              <Search className="h-4 w-4" />
+              <span>Search Results</span>
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="grid" className="space-y-6">
+            {/* Filters */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+            >
+              <TimetableFilters
+                selectedDepartment={selectedDepartment}
+                setSelectedDepartment={setSelectedDepartment}
+                selectedSemester={selectedSemester}
+                setSelectedSemester={setSelectedSemester}
+                viewMode={viewMode}
+                setViewMode={setViewMode}
+                departments={departments}
+                semesters={semesters}
+                viewModes={viewModes}
+              />
+            </motion.div>
+
+            {/* Timetable Grid */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+            >
+              <TimetableGrid
+                department={selectedDepartment}
+                semester={selectedSemester}
+                viewMode={viewMode}
+              />
+            </motion.div>
+          </TabsContent>
+
+          <TabsContent value="department-year" className="space-y-6">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+            >
+              <DepartmentYearTimetable
+                selectedDepartment={selectedDepartment}
+                setSelectedDepartment={setSelectedDepartment}
+                departments={departments}
+              />
+            </motion.div>
+          </TabsContent>
+
+          <TabsContent value="search" className="space-y-6">
+            <StaffSearchResults 
+              results={searchResults} 
+              isLoading={isSearching}
+            />
+          </TabsContent>
+        </Tabs>
       </div>
 
       {/* Add Entry Modal - Only show for admins */}
