@@ -1,7 +1,6 @@
-
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Calendar, Filter, Plus, Download, Eye, Search } from "lucide-react";
+import { Calendar, Filter, Plus, Download, Eye, Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -12,6 +11,8 @@ import AddTimetableEntry from "@/components/AddTimetableEntry";
 import StaffSearchBar from "@/components/StaffSearchBar";
 import StaffSearchResults from "@/components/StaffSearchResults";
 import DepartmentYearTimetable from "@/components/DepartmentYearTimetable";
+import AutoScheduleForm from "@/components/AutoScheduleForm";
+import TimetablePreview from "@/components/TimetablePreview";
 
 const TimetableView = () => {
   const [selectedDepartment, setSelectedDepartment] = useState("CSE");
@@ -22,6 +23,10 @@ const TimetableView = () => {
   const [activeTab, setActiveTab] = useState("grid");
   const [searchResults, setSearchResults] = useState(null);
   const [isSearching, setIsSearching] = useState(false);
+  const [showAutoSchedule, setShowAutoSchedule] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generatedTimetable, setGeneratedTimetable] = useState(null);
+  const [schedulingConflicts, setSchedulingConflicts] = useState([]);
 
   useEffect(() => {
     const role = localStorage.getItem("userRole");
@@ -107,6 +112,68 @@ const TimetableView = () => {
     setActiveTab("grid");
   };
 
+  const handleAutoGenerate = async (department: string, year: string, semester: string) => {
+    setIsGenerating(true);
+    
+    // Mock data for demo - in real app, fetch from API
+    const mockStaff = [
+      { id: "1", name: "Dr. Priya Sharma", role: "AsstProf", department, maxHours: 18, currentHours: 12 },
+      { id: "2", name: "Prof. Rajesh Kumar", role: "Prof", department, maxHours: 12, currentHours: 8 },
+    ];
+
+    const mockSubjects = [
+      { id: "1", name: "Data Structures", code: "CS8391", type: "theory", credits: 3, department, year, semester, priority: "morning" },
+      { id: "2", name: "Database Lab", code: "CS8392", type: "lab", credits: 2, department, year, semester, priority: "afternoon" },
+    ];
+
+    const mockClassrooms = [
+      { id: "1", name: "CSE-101", type: "lecture", capacity: 60, department },
+      { id: "2", name: "CSE-Lab1", type: "lab", capacity: 30, department },
+    ];
+
+    const mockStudentGroups = [
+      { id: "1", name: `${department}-${year}A`, department, year, strength: 60 },
+    ];
+
+    // Simulate API call delay
+    setTimeout(async () => {
+      try {
+        const { timetableScheduler } = await import("../utils/timetableScheduler");
+        const result = timetableScheduler.generateTimetable(
+          mockSubjects,
+          mockStaff,
+          mockClassrooms,
+          mockStudentGroups,
+          department,
+          year,
+          semester
+        );
+
+        setGeneratedTimetable(result.timetable);
+        setSchedulingConflicts(result.conflicts);
+        setIsGenerating(false);
+        setActiveTab("preview");
+      } catch (error) {
+        console.error("Scheduling error:", error);
+        setSchedulingConflicts([
+          { type: "system_error", description: "Failed to generate timetable. Please try again.", severity: "high" }
+        ]);
+        setIsGenerating(false);
+      }
+    }, 2000);
+  };
+
+  const handleSaveGenerated = () => {
+    // In real app, save to database
+    console.log("Saving generated timetable:", generatedTimetable);
+    // Show success toast
+  };
+
+  const handleEditEntry = (entryId: string, updates: any) => {
+    // In real app, update specific entry
+    console.log("Editing entry:", entryId, updates);
+  };
+
   return (
     <div className="min-h-screen">
       <Navigation />
@@ -121,18 +188,27 @@ const TimetableView = () => {
           <div>
             <h1 className="text-3xl font-bold text-foreground mb-2 font-montserrat">Timetable Management</h1>
             <p className="text-muted-foreground">
-              {isAdmin ? "Manage department-wise and semester-wise timetables" : "View department-wise and semester-wise timetables"}
+              {isAdmin ? "Manage department-wise and semester-wise timetables with automated scheduling" : "View department-wise and semester-wise timetables"}
             </p>
           </div>
           <div className="flex flex-wrap gap-2 mt-4 md:mt-0">
             {isAdmin && (
-              <Button
-                onClick={() => setShowAddEntry(true)}
-                className="bg-accent hover:bg-accent/90 text-accent-foreground"
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Add Entry
-              </Button>
+              <>
+                <Button
+                  onClick={() => setShowAutoSchedule(true)}
+                  className="bg-green-600 hover:bg-green-700 text-white"
+                >
+                  <Calendar className="h-4 w-4 mr-2" />
+                  Auto Generate
+                </Button>
+                <Button
+                  onClick={() => setShowAddEntry(true)}
+                  className="bg-accent hover:bg-accent/90 text-accent-foreground"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Entry
+                </Button>
+              </>
             )}
             <Button variant="outline" className="border-border hover:bg-accent/10">
               <Download className="h-4 w-4 mr-2" />
@@ -144,9 +220,42 @@ const TimetableView = () => {
         {/* Staff Search Bar */}
         <StaffSearchBar onSearch={handleStaffSearch} onClear={handleClearSearch} />
 
+        {/* Auto Schedule Modal */}
+        {showAutoSchedule && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
+          >
+            <div className="w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+              <Card className="glassmorphism-strong border-border">
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <CardTitle>Automated Timetable Generation</CardTitle>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowAutoSchedule(false)}
+                    className="h-8 w-8 p-0"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </CardHeader>
+                <CardContent>
+                  <AutoScheduleForm
+                    onGenerate={handleAutoGenerate}
+                    isGenerating={isGenerating}
+                    generatedTimetable={generatedTimetable}
+                    conflicts={schedulingConflicts}
+                  />
+                </CardContent>
+              </Card>
+            </div>
+          </motion.div>
+        )}
+
         {/* Main Content Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="grid" className="flex items-center space-x-2">
               <Eye className="h-4 w-4" />
               <span>Grid View</span>
@@ -154,6 +263,10 @@ const TimetableView = () => {
             <TabsTrigger value="department-year" className="flex items-center space-x-2">
               <Calendar className="h-4 w-4" />
               <span>Department by Year</span>
+            </TabsTrigger>
+            <TabsTrigger value="preview" disabled={!generatedTimetable} className="flex items-center space-x-2">
+              <Eye className="h-4 w-4" />
+              <span>Preview</span>
             </TabsTrigger>
             <TabsTrigger value="search" disabled={!searchResults} className="flex items-center space-x-2">
               <Search className="h-4 w-4" />
@@ -206,6 +319,17 @@ const TimetableView = () => {
                 departments={departments}
               />
             </motion.div>
+          </TabsContent>
+
+          <TabsContent value="preview" className="space-y-6">
+            {generatedTimetable && (
+              <TimetablePreview
+                timetableData={generatedTimetable}
+                onSave={handleSaveGenerated}
+                onEdit={handleEditEntry}
+                isEditable={isAdmin}
+              />
+            )}
           </TabsContent>
 
           <TabsContent value="search" className="space-y-6">

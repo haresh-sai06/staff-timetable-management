@@ -115,7 +115,7 @@ All colors MUST be HSL.
   color: hsl(217, 91%, 24%);
 }
 
-/* Glassmorphism Effects */
+/* Enhanced Glassmorphism Effects */
 .glassmorphism {
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
@@ -128,11 +128,114 @@ All colors MUST be HSL.
   -webkit-backdrop-filter: blur(16px);
   background: rgba(30, 58, 138, 0.15);
   border: 1px solid rgba(255, 215, 0, 0.2);
+  box-shadow: 0 8px 32px rgba(30, 58, 138, 0.1);
 }
 
 .glassmorphism-strong {
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
   background: rgba(30, 58, 138, 0.25);
   border: 1px solid rgba(255, 215, 0, 0.3);
+  box-shadow: 0 12px 40px rgba(30, 58, 138, 0.15);
+}
+
+/* Enhanced Micro-interactions */
+.button-ripple {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.button-ripple:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(255, 215, 0, 0.2);
+}
+
+.button-ripple::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 215, 0, 0.3);
+  transform: translate(-50%, -50%);
+  transition: width 0.6s, height 0.6s;
+}
+
+.button-ripple:active::before {
+  width: 300px;
+  height: 300px;
+}
+
+/* Smooth scroll behavior */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Enhanced focus states for accessibility */
+*:focus-visible {
+  outline: 2px solid hsl(45, 100%, 50%);
+  outline-offset: 2px;
+}
+
+/* Loading animations */
+@keyframes shimmer {
+  0% {
+    background-position: -200px 0;
+  }
+  100% {
+    background-position: calc(200px + 100%) 0;
+  }
+}
+
+.shimmer {
+  background: linear-gradient(90deg, 
+    hsl(210, 40%, 15%) 0%, 
+    hsl(210, 40%, 25%) 50%, 
+    hsl(210, 40%, 15%) 100%);
+  background-size: 200px 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* Pulse effect for conflicts */
+@keyframes conflictPulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+  }
+  50% {
+    box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);
+  }
+}
+
+.conflict-pulse {
+  animation: conflictPulse 2s infinite;
+}
+
+/* Mobile optimizations */
+@media (max-width: 768px) {
+  .glassmorphism-card,
+  .glassmorphism-strong {
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .glassmorphism-card,
+  .glassmorphism-strong {
+    background: hsl(210, 40%, 15%);
+    border: 2px solid hsl(45, 100%, 50%);
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

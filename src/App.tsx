@@ -14,6 +14,7 @@ import StaffManagement from "./pages/StaffManagement";
 import ClassroomManagement from "./pages/ClassroomManagement";
 import ConflictResolution from "./pages/ConflictResolution";
 import NotFound from "./pages/NotFound";
+import MobileSidebar from "./components/MobileSidebar";
 
 const queryClient = new QueryClient();
 
@@ -24,14 +25,27 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <div className="min-h-screen relative">
-          {/* Background Image with Glassmorphism */}
+          {/* Enhanced Background with Multiple Layers */}
           <div 
             className="fixed inset-0 z-0 bg-cover bg-center bg-no-repeat"
             style={{
               backgroundImage: `url('https://images.unsplash.com/photo-1562774053-701939374585?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2072&q=80')`
             }}
           />
-          <div className="fixed inset-0 z-10 bg-gradient-to-br from-primary/80 via-primary/60 to-accent/40 backdrop-blur-sm" />
+          
+          {/* Primary gradient overlay */}
+          <div className="fixed inset-0 z-10 bg-gradient-to-br from-primary/80 via-primary/60 to-accent/40" />
+          
+          {/* Secondary glassmorphism layer */}
+          <div className="fixed inset-0 z-15 backdrop-blur-[2px] bg-gradient-to-b from-transparent via-primary/10 to-primary/20" />
+          
+          {/* SKCT Logo Watermark */}
+          <div className="fixed inset-0 z-16 flex items-center justify-center pointer-events-none">
+            <div className="w-96 h-96 opacity-[0.03] bg-accent/20 rounded-full blur-3xl" />
+          </div>
+          
+          {/* Mobile Sidebar */}
+          <MobileSidebar />
           
           <motion.div
             initial={{ opacity: 0 }}
