@@ -117,18 +117,18 @@ const TimetableView = () => {
     
     // Mock data for demo - in real app, fetch from API
     const mockStaff = [
-      { id: "1", name: "Dr. Priya Sharma", role: "AsstProf", department, maxHours: 18, currentHours: 12 },
-      { id: "2", name: "Prof. Rajesh Kumar", role: "Prof", department, maxHours: 12, currentHours: 8 },
+      { id: "1", name: "Dr. Priya Sharma", role: "AsstProf" as const, department, maxHours: 18, currentHours: 12 },
+      { id: "2", name: "Prof. Rajesh Kumar", role: "Prof" as const, department, maxHours: 12, currentHours: 8 },
     ];
 
     const mockSubjects = [
-      { id: "1", name: "Data Structures", code: "CS8391", type: "theory", credits: 3, department, year, semester, priority: "morning" },
-      { id: "2", name: "Database Lab", code: "CS8392", type: "lab", credits: 2, department, year, semester, priority: "afternoon" },
+      { id: "1", name: "Data Structures", code: "CS8391", type: "theory" as const, credits: 3, department, year, semester, priority: "morning" as const },
+      { id: "2", name: "Database Lab", code: "CS8392", type: "lab" as const, credits: 2, department, year, semester, priority: "afternoon" as const },
     ];
 
     const mockClassrooms = [
-      { id: "1", name: "CSE-101", type: "lecture", capacity: 60, department },
-      { id: "2", name: "CSE-Lab1", type: "lab", capacity: 30, department },
+      { id: "1", name: "CSE-101", type: "lecture" as const, capacity: 60, department },
+      { id: "2", name: "CSE-Lab1", type: "lab" as const, capacity: 30, department },
     ];
 
     const mockStudentGroups = [
