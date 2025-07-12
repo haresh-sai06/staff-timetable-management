@@ -141,7 +141,7 @@ const AutoScheduleForm = ({ onGenerate, isGenerating, generatedTimetable, confli
             </Button>
           </div>
 
-          {conflicts.length > 0 && (
+          {conflicts && conflicts.length > 0 && (
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -157,7 +157,7 @@ const AutoScheduleForm = ({ onGenerate, isGenerating, generatedTimetable, confli
               <div className="space-y-1">
                 {conflicts.slice(0, 3).map((conflict, index) => (
                   <p key={index} className="text-sm text-amber-700">
-                    • {conflict.description}
+                    • {typeof conflict === 'string' ? conflict : conflict.description || 'Unknown conflict'}
                   </p>
                 ))}
                 {conflicts.length > 3 && (
@@ -169,7 +169,7 @@ const AutoScheduleForm = ({ onGenerate, isGenerating, generatedTimetable, confli
             </motion.div>
           )}
 
-          {generatedTimetable && conflicts.length === 0 && (
+          {generatedTimetable && (!conflicts || conflicts.length === 0) && (
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
