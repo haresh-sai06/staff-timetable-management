@@ -114,3 +114,25 @@ All colors MUST be HSL.
 .skct-blue-text {
   color: hsl(217, 91%, 24%);
 }
+
+/* Glassmorphism Effects */
+.glassmorphism {
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.glassmorphism-card {
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  background: rgba(30, 58, 138, 0.15);
+  border: 1px solid rgba(255, 215, 0, 0.2);
+}
+
+.glassmorphism-strong {
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  background: rgba(30, 58, 138, 0.25);
+  border: 1px solid rgba(255, 215, 0, 0.3);
+}

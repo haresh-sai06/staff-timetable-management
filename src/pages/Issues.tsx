@@ -13,7 +13,7 @@ const Issues = () => {
   };
 
   return (
-    <div className="min-h-screen skct-gradient">
+    <div className="min-h-screen">
       <Navigation />
       
       <div className="container mx-auto px-4 py-8">

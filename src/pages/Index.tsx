@@ -57,7 +57,7 @@ const Index = () => {
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
               transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-              className="bg-primary p-4 rounded-2xl mr-4 shadow-lg"
+              className="bg-primary/90 backdrop-blur-sm p-4 rounded-2xl mr-4 shadow-lg border border-border"
             >
               <BookOpen className="h-10 w-10 text-primary-foreground" />
             </motion.div>
@@ -72,16 +72,16 @@ const Index = () => {
             Sri Krishna College of Technology
           </h2>
           <div className="flex flex-wrap justify-center gap-2 mb-6">
-            <span className="px-3 py-1 bg-accent/20 text-accent rounded-full text-sm font-medium">
+            <span className="px-3 py-1 bg-accent/20 backdrop-blur-sm text-accent rounded-full text-sm font-medium border border-accent/30">
               Autonomous
             </span>
-            <span className="px-3 py-1 bg-accent/20 text-accent rounded-full text-sm font-medium">
+            <span className="px-3 py-1 bg-accent/20 backdrop-blur-sm text-accent rounded-full text-sm font-medium border border-accent/30">
               Anna University Affiliated
             </span>
-            <span className="px-3 py-1 bg-accent/20 text-accent rounded-full text-sm font-medium">
+            <span className="px-3 py-1 bg-accent/20 backdrop-blur-sm text-accent rounded-full text-sm font-medium border border-accent/30">
               NIRF Rank 83 (2024)
             </span>
-            <span className="px-3 py-1 bg-accent/20 text-accent rounded-full text-sm font-medium">
+            <span className="px-3 py-1 bg-accent/20 backdrop-blur-sm text-accent rounded-full text-sm font-medium border border-accent/30">
               7 NBA Accredited Programs
             </span>
           </div>
@@ -99,7 +99,7 @@ const Index = () => {
           transition={{ duration: 0.6, delay: 0.2 }}
           className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12"
         >
-          <Card className="text-center hover:shadow-xl transition-shadow bg-card/80 backdrop-blur-sm border-border">
+          <Card className="text-center hover:shadow-xl transition-shadow bg-card/90 backdrop-blur-md border-border/50">
             <CardContent className="pt-6">
               <Award className="h-12 w-12 text-accent mx-auto mb-2" />
               <div className="text-2xl font-bold text-accent font-montserrat">1998</div>
@@ -107,7 +107,7 @@ const Index = () => {
               <p className="text-sm text-muted-foreground">25+ Years Excellence</p>
             </CardContent>
           </Card>
-          <Card className="text-center hover:shadow-xl transition-shadow bg-card/80 backdrop-blur-sm border-border">
+          <Card className="text-center hover:shadow-xl transition-shadow bg-card/90 backdrop-blur-md border-border/50">
             <CardContent className="pt-6">
               <Building2 className="h-12 w-12 text-accent mx-auto mb-2" />
               <div className="text-2xl font-bold text-accent font-montserrat">11.5</div>
@@ -115,7 +115,7 @@ const Index = () => {
               <p className="text-sm text-muted-foreground">Modern Facilities</p>
             </CardContent>
           </Card>
-          <Card className="text-center hover:shadow-xl transition-shadow bg-card/80 backdrop-blur-sm border-border">
+          <Card className="text-center hover:shadow-xl transition-shadow bg-card/90 backdrop-blur-md border-border/50">
             <CardContent className="pt-6">
               <BookOpen className="h-12 w-12 text-accent mx-auto mb-2" />
               <div className="text-2xl font-bold text-accent font-montserrat">15</div>
@@ -123,7 +123,7 @@ const Index = () => {
               <p className="text-sm text-muted-foreground">11 UG + 4 PG</p>
             </CardContent>
           </Card>
-          <Card className="text-center hover:shadow-xl transition-shadow bg-card/80 backdrop-blur-sm border-border">
+          <Card className="text-center hover:shadow-xl transition-shadow bg-card/90 backdrop-blur-md border-border/50">
             <CardContent className="pt-6">
               <Trophy className="h-12 w-12 text-accent mx-auto mb-2" />
               <div className="text-2xl font-bold text-accent font-montserrat">83</div>
@@ -149,10 +149,10 @@ const Index = () => {
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
             >
-              <Card className="h-full hover:shadow-xl transition-all duration-300 cursor-pointer border-border bg-card/80 backdrop-blur-sm">
+              <Card className="h-full hover:shadow-xl transition-all duration-300 cursor-pointer border-border/50 bg-card/90 backdrop-blur-md">
                 <CardHeader>
                   <div className="flex items-center space-x-4">
-                    <div className={`${feature.color} p-3 rounded-xl shadow-lg`}>
+                    <div className={`${feature.color}/90 backdrop-blur-sm p-3 rounded-xl shadow-lg border border-border/30`}>
                       <feature.icon className="h-6 w-6 text-primary-foreground" />
                     </div>
                     <div>
@@ -166,7 +166,7 @@ const Index = () => {
                 <CardContent>
                   <Button 
                     onClick={feature.action}
-                    className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-medium transition-all duration-300"
+                    className="w-full bg-primary/90 hover:bg-primary backdrop-blur-sm text-primary-foreground font-medium transition-all duration-300 border border-border/30"
                   >
                     Get Started
                   </Button>
@@ -183,7 +183,7 @@ const Index = () => {
           transition={{ duration: 0.6, delay: 0.6 }}
           className="text-center"
         >
-          <Card className="bg-card/90 backdrop-blur-sm border-border shadow-xl">
+          <Card className="bg-card/90 backdrop-blur-md border-border/50 shadow-xl">
             <CardHeader>
               <CardTitle className="text-2xl text-accent font-montserrat">
                 Built for SKCT Excellence

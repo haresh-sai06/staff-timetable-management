@@ -15,6 +15,12 @@ const TimetableView = () => {
   const [selectedSemester, setSelectedSemester] = useState("odd");
   const [viewMode, setViewMode] = useState("department"); // department, staff, general
   const [showAddEntry, setShowAddEntry] = useState(false);
+  const [userRole, setUserRole] = useState("");
+
+  useEffect(() => {
+    const role = localStorage.getItem("userRole");
+    setUserRole(role || "");
+  }, []);
 
   const departments = [
     { value: "CSE", label: "Computer Science & Engineering" },
@@ -35,8 +41,10 @@ const TimetableView = () => {
     { value: "general", label: "General View" },
   ];
 
+  const isAdmin = userRole === "admin";
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+    <div className="min-h-screen">
       <Navigation />
       
       <div className="container mx-auto px-4 py-8">
@@ -47,20 +55,22 @@ const TimetableView = () => {
           className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8"
         >
           <div>
-            <h1 className="text-3xl font-bold text-gray-800 mb-2">Timetable Management</h1>
-            <p className="text-gray-600">
-              Manage department-wise and semester-wise timetables for Anna University
+            <h1 className="text-3xl font-bold text-foreground mb-2 font-montserrat">Timetable Management</h1>
+            <p className="text-muted-foreground">
+              {isAdmin ? "Manage department-wise and semester-wise timetables" : "View department-wise and semester-wise timetables"}
             </p>
           </div>
           <div className="flex flex-wrap gap-2 mt-4 md:mt-0">
-            <Button
-              onClick={() => setShowAddEntry(true)}
-              className="bg-indigo-600 hover:bg-indigo-700"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Add Entry
-            </Button>
-            <Button variant="outline">
+            {isAdmin && (
+              <Button
+                onClick={() => setShowAddEntry(true)}
+                className="bg-accent hover:bg-accent/90 text-accent-foreground"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Add Entry
+              </Button>
+            )}
+            <Button variant="outline" className="border-border hover:bg-accent/10">
               <Download className="h-4 w-4 mr-2" />
               Export
             </Button>
@@ -101,8 +111,8 @@ const TimetableView = () => {
         </motion.div>
       </div>
 
-      {/* Add Entry Modal */}
-      {showAddEntry && (
+      {/* Add Entry Modal - Only show for admins */}
+      {isAdmin && showAddEntry && (
         <AddTimetableEntry
           onClose={() => setShowAddEntry(false)}
           department={selectedDepartment}
