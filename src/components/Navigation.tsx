@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Menu, X, Calendar, Users, MapPin, AlertTriangle, Home, GraduationCap, User, LogOut, MessageSquare } from "lucide-react";
+import { Menu, X, Calendar, Users, MapPin, AlertTriangle, Home, GraduationCap, User as UserIcon, LogOut, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -176,7 +176,7 @@ const Navigation = () => {
                   onClick={handleLoginClick}
                   className="bg-accent hover:bg-accent/90 text-accent-foreground"
                 >
-                  <User className="h-4 w-4 mr-2" />
+                  <UserIcon className="h-4 w-4 mr-2" />
                   Login
                 </Button>
               )}
@@ -231,7 +231,7 @@ const Navigation = () => {
                     onClick={handleProfileClick}
                     className="w-full justify-start space-x-2 text-accent hover:text-accent/80"
                   >
-                    <User className="h-4 w-4" />
+                    <UserIcon className="h-4 w-4" />
                     <span>Profile ({userName})</span>
                     {userRole === 'admin' && (
                       <span className="text-xs bg-red-100 text-red-800 px-2 py-1 rounded">Admin</span>
@@ -251,7 +251,7 @@ const Navigation = () => {
                   onClick={handleLoginClick}
                   className="w-full justify-start space-x-2 bg-accent hover:bg-accent/90 text-accent-foreground"
                 >
-                  <User className="h-4 w-4" />
+                  <UserIcon className="h-4 w-4" />
                   <span>Login</span>
                 </Button>
               )}
