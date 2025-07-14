@@ -14,7 +14,78 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      profiles: {
+        Row: {
+          created_at: string | null
+          department: string | null
+          email: string
+          full_name: string | null
+          id: string
+          role: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          department?: string | null
+          email: string
+          full_name?: string | null
+          id: string
+          role?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          department?: string | null
+          email?: string
+          full_name?: string | null
+          id?: string
+          role?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      staff: {
+        Row: {
+          created_at: string | null
+          current_hours: number | null
+          department: string
+          email: string
+          id: string
+          is_active: boolean | null
+          max_hours: number | null
+          name: string
+          role: string
+          subjects: string[] | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          current_hours?: number | null
+          department: string
+          email: string
+          id?: string
+          is_active?: boolean | null
+          max_hours?: number | null
+          name: string
+          role: string
+          subjects?: string[] | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          current_hours?: number | null
+          department?: string
+          email?: string
+          id?: string
+          is_active?: boolean | null
+          max_hours?: number | null
+          name?: string
+          role?: string
+          subjects?: string[] | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

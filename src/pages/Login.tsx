@@ -7,28 +7,44 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isSignUp, setIsSignUp] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
-    // Mock authentication - replace with actual API call
-    setTimeout(() => {
-      if (email && password) {
-        // Mock successful login
-        const userRole = email.includes("admin") ? "admin" : "user";
-        localStorage.setItem("userToken", "mock-jwt-token");
-        localStorage.setItem("userRole", userRole);
-        localStorage.setItem("userEmail", email);
-        localStorage.setItem("userName", email.split("@")[0]);
+    try {
+      if (isSignUp) {
+        const { error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            emailRedirectTo: `${window.location.origin}/`
+          }
+        });
+        
+        if (error) throw error;
+        
+        toast({
+          title: "Sign Up Successful",
+          description: "Please check your email to confirm your account",
+        });
+      } else {
+        const { error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+        
+        if (error) throw error;
         
         toast({
           title: "Login Successful",
@@ -36,15 +52,16 @@ const Login = () => {
         });
         
         navigate("/");
-      } else {
-        toast({
-          title: "Login Failed",
-          description: "Please enter valid credentials",
-          variant: "destructive",
-        });
       }
+    } catch (error: any) {
+      toast({
+        title: isSignUp ? "Sign Up Failed" : "Login Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
   return (
@@ -80,14 +97,41 @@ const Login = () => {
           </h2>
         </motion.div>
 
-        {/* Login Form */}
+        {/* Login/Signup Form */}
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.3 }}
           className="bg-card/95 backdrop-blur-md rounded-lg shadow-xl p-6 border border-border"
         >
-          <form onSubmit={handleLogin} className="space-y-4">
+          <div className="flex justify-center mb-6">
+            <div className="flex bg-muted rounded-lg p-1">
+              <button
+                type="button"
+                onClick={() => setIsSignUp(false)}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                  !isSignUp 
+                    ? "bg-background text-foreground shadow-sm" 
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                Sign In
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsSignUp(true)}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                  isSignUp 
+                    ? "bg-background text-foreground shadow-sm" 
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                Sign Up
+              </button>
+            </div>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <Label htmlFor="email" className="text-foreground font-medium">
                 Email Address
@@ -135,21 +179,21 @@ const Login = () => {
               {isLoading ? (
                 <div className="flex items-center space-x-2">
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-accent-foreground"></div>
-                  <span>Signing In...</span>
+                  <span>{isSignUp ? "Creating Account..." : "Signing In..."}</span>
                 </div>
               ) : (
                 <div className="flex items-center space-x-2">
                   <LogIn className="h-4 w-4" />
-                  <span>Sign In</span>
+                  <span>{isSignUp ? "Create Account" : "Sign In"}</span>
                 </div>
               )}
             </Button>
           </form>
 
           <div className="mt-6 text-center text-sm text-muted-foreground">
-            <p>Demo Credentials:</p>
-            <p className="text-accent">Admin: admin@skct.edu | User: user@skct.edu</p>
-            <p>Password: any password</p>
+            <p>Demo Admin Account:</p>
+            <p className="text-accent">admin@skct.edu / password123</p>
+            <p className="mt-2">Or create an account with "admin" in the email for admin access</p>
           </div>
         </motion.div>
       </motion.div>

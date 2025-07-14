@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Users, Plus, Search, Edit, Trash2, Clock, Award } from "lucide-react";
@@ -6,6 +7,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import Navigation from "@/components/Navigation";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import { useNavigate } from "react-router-dom";
+import type { User } from "@supabase/supabase-js";
 
 interface Staff {
   id: string;
@@ -13,72 +18,98 @@ interface Staff {
   department: string;
   role: string;
   email: string;
-  maxHours: number;
-  currentHours: number;
+  max_hours: number;
+  current_hours: number;
   subjects: string[];
-  isActive: boolean;
+  is_active: boolean;
+}
+
+interface UserProfile {
+  role: string;
 }
 
 const StaffManagement = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedDepartment, setSelectedDepartment] = useState("all");
-  const [userRole, setUserRole] = useState("");
+  const [user, setUser] = useState<User | null>(null);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [staffData, setStaffData] = useState<Staff[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
+  const navigate = useNavigate();
 
   useEffect(() => {
-    const role = localStorage.getItem("userRole");
-    const email = localStorage.getItem("userEmail");
-    console.log("Debug - User Role:", role);
-    console.log("Debug - User Email:", email);
-    console.log("Debug - Is Admin:", role === "admin");
-    setUserRole(role || "");
+    // Check authentication and fetch user profile
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        navigate("/login");
+        return;
+      }
+
+      setUser(session.user);
+
+      // Fetch user profile
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', session.user.id)
+        .single();
+
+      if (error) {
+        console.error('Error fetching profile:', error);
+        toast({
+          title: "Error",
+          description: "Failed to fetch user profile",
+          variant: "destructive",
+        });
+      } else {
+        setUserProfile(profile);
+      }
+    };
+
+    checkAuth();
+
+    // Set up auth state listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (!session) {
+          navigate("/login");
+        } else {
+          setUser(session.user);
+        }
+      }
+    );
+
+    return () => subscription.unsubscribe();
+  }, [navigate, toast]);
+
+  useEffect(() => {
+    fetchStaff();
   }, []);
 
-  const staffData: Staff[] = [
-    {
-      id: "1",
-      name: "Dr. Priya Sharma",
-      department: "CSE",
-      role: "AsstProf",
-      email: "priya.sharma@university.edu",
-      maxHours: 18,
-      currentHours: 15,
-      subjects: ["Data Structures", "Algorithms", "Database Management"],
-      isActive: true
-    },
-    {
-      id: "2",
-      name: "Prof. Rajesh Kumar",
-      department: "CSE",
-      role: "Prof",
-      email: "rajesh.kumar@university.edu",
-      maxHours: 12,
-      currentHours: 10,
-      subjects: ["Computer Networks", "Operating Systems"],
-      isActive: true
-    },
-    {
-      id: "3",
-      name: "Dr. Anitha Reddy",
-      department: "ECE",
-      role: "AsstProf",
-      email: "anitha.reddy@university.edu",
-      maxHours: 18,
-      currentHours: 16,
-      subjects: ["Digital Electronics", "Communication Systems"],
-      isActive: true
-    },
-    {
-      id: "4",
-      name: "Prof. Suresh Nair",
-      department: "MECH",
-      role: "Prof",
-      email: "suresh.nair@university.edu",
-      maxHours: 12,
-      currentHours: 8,
-      subjects: ["Thermodynamics", "Fluid Mechanics"],
-      isActive: true
+  const fetchStaff = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('staff')
+        .select('*')
+        .order('name');
+
+      if (error) throw error;
+
+      setStaffData(data || []);
+    } catch (error: any) {
+      console.error('Error fetching staff:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch staff data",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
 
   const departments = ["all", "CSE", "ECE", "MECH", "CIVIL", "EEE"];
 
@@ -107,40 +138,82 @@ const StaffManagement = () => {
     return "bg-green-100";
   };
 
-  const isAdmin = userRole === "admin";
+  const isAdmin = userProfile?.role === "admin";
 
   const handleEditStaff = (staffId: string) => {
     console.log("Edit staff:", staffId);
-    // TODO: Implement edit functionality
+    toast({
+      title: "Feature Coming Soon",
+      description: "Staff editing functionality will be implemented soon",
+    });
   };
 
-  const handleDeleteStaff = (staffId: string) => {
-    console.log("Delete staff:", staffId);
-    // TODO: Implement delete functionality
+  const handleDeleteStaff = async (staffId: string) => {
+    if (!isAdmin) {
+      toast({
+        title: "Access Denied",
+        description: "Only administrators can delete staff members",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('staff')
+        .delete()
+        .eq('id', staffId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Staff member deleted successfully",
+      });
+
+      fetchStaff(); // Refresh the list
+    } catch (error: any) {
+      console.error('Error deleting staff:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete staff member",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleAddStaff = () => {
-    console.log("Add new staff");
-    // TODO: Implement add staff functionality
+    toast({
+      title: "Feature Coming Soon",
+      description: "Add staff functionality will be implemented soon",
+    });
   };
 
   const handleAssignSubject = (staffId: string) => {
-    console.log("Assign subject to staff:", staffId);
-    // TODO: Implement assign subject functionality
+    toast({
+      title: "Feature Coming Soon",
+      description: "Subject assignment functionality will be implemented soon",
+    });
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen">
+        <Navigation />
+        <div className="container mx-auto px-4 py-8">
+          <div className="flex justify-center items-center h-64">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent"></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen">
       <Navigation />
       
       <div className="container mx-auto px-4 py-8">
-        {/* Debug Info - Remove this in production */}
-        {process.env.NODE_ENV === 'development' && (
-          <div className="mb-4 p-2 bg-yellow-100 text-yellow-800 rounded text-sm">
-            Debug: User Role = "{userRole}" | Is Admin = {isAdmin.toString()}
-          </div>
-        )}
-
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -152,6 +225,13 @@ const StaffManagement = () => {
             <p className="text-muted-foreground">
               {isAdmin ? "Manage faculty workload, roles, and assignments for Anna University departments" : "View faculty information and workload for Anna University departments"}
             </p>
+            {userProfile && (
+              <div className="mt-2">
+                <Badge variant={isAdmin ? "destructive" : "secondary"}>
+                  {userProfile.role.charAt(0).toUpperCase() + userProfile.role.slice(1)} Access
+                </Badge>
+              </div>
+            )}
           </div>
           <div className="flex gap-2 mt-4 md:mt-0">
             {isAdmin && (
@@ -179,7 +259,7 @@ const StaffManagement = () => {
                 <Users className="h-8 w-8 text-accent" />
                 <div>
                   <p className="text-2xl font-bold text-foreground">
-                    {staffData.filter(s => s.isActive).length}
+                    {staffData.filter(s => s.is_active).length}
                   </p>
                   <p className="text-muted-foreground">Active Staff</p>
                 </div>
@@ -221,7 +301,7 @@ const StaffManagement = () => {
                 <Clock className="h-8 w-8 text-accent" />
                 <div>
                   <p className="text-2xl font-bold text-foreground">
-                    {staffData.filter(s => s.currentHours >= s.maxHours * 0.9).length}
+                    {staffData.filter(s => s.current_hours >= s.max_hours * 0.9).length}
                   </p>
                   <p className="text-muted-foreground">Near Limit</p>
                 </div>
@@ -316,21 +396,21 @@ const StaffManagement = () => {
                   </div>
 
                   {/* Workload */}
-                  <div className={`p-3 rounded-lg ${getWorkloadBg(staff.currentHours, staff.maxHours)}`}>
+                  <div className={`p-3 rounded-lg ${getWorkloadBg(staff.current_hours, staff.max_hours)}`}>
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-sm font-medium">Weekly Workload</span>
-                      <span className={`text-sm font-bold ${getWorkloadColor(staff.currentHours, staff.maxHours)}`}>
-                        {staff.currentHours}/{staff.maxHours} hrs
+                      <span className={`text-sm font-bold ${getWorkloadColor(staff.current_hours, staff.max_hours)}`}>
+                        {staff.current_hours}/{staff.max_hours} hrs
                       </span>
                     </div>
                     <div className="w-full bg-white/50 rounded-full h-2">
                       <motion.div
                         initial={{ width: 0 }}
-                        animate={{ width: `${(staff.currentHours / staff.maxHours) * 100}%` }}
+                        animate={{ width: `${(staff.current_hours / staff.max_hours) * 100}%` }}
                         transition={{ delay: 0.5 + index * 0.1, duration: 0.8 }}
                         className={`h-2 rounded-full ${
-                          staff.currentHours >= staff.maxHours * 0.9 ? "bg-red-500" :
-                          staff.currentHours >= staff.maxHours * 0.75 ? "bg-orange-500" :
+                          staff.current_hours >= staff.max_hours * 0.9 ? "bg-red-500" :
+                          staff.current_hours >= staff.max_hours * 0.75 ? "bg-orange-500" :
                           "bg-green-500"
                         }`}
                       />

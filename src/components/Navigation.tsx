@@ -6,21 +6,52 @@ import { Button } from "@/components/ui/button";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import type { User, Session } from "@supabase/supabase-js";
 
 const Navigation = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [userName, setUserName] = useState("");
+  const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
+  const [userRole, setUserRole] = useState<string>("");
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
 
   useEffect(() => {
-    const token = localStorage.getItem("userToken");
-    const name = localStorage.getItem("userName");
-    setIsAuthenticated(!!token);
-    setUserName(name || "User");
-  }, [location]);
+    // Set up auth state listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        setSession(session);
+        setUser(session?.user ?? null);
+        
+        if (session?.user) {
+          // Fetch user profile to get role
+          setTimeout(async () => {
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('role')
+              .eq('id', session.user.id)
+              .single();
+            
+            if (profile) {
+              setUserRole(profile.role);
+            }
+          }, 0);
+        } else {
+          setUserRole("");
+        }
+      }
+    );
+
+    // Check for existing session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   const navItems = [
     { icon: Home, label: "Home", path: "/" },
@@ -33,17 +64,21 @@ const Navigation = () => {
 
   const isActive = (path: string) => location.pathname === path;
 
-  const handleLogout = () => {
-    localStorage.removeItem("userToken");
-    localStorage.removeItem("userRole");
-    localStorage.removeItem("userEmail");
-    localStorage.removeItem("userName");
-    setIsAuthenticated(false);
-    toast({
-      title: "Logged out",
-      description: "You have been successfully logged out",
-    });
-    navigate("/login");
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+      toast({
+        title: "Logged out",
+        description: "You have been successfully logged out",
+      });
+      navigate("/login");
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
   };
 
   const handleProfileClick = () => {
@@ -55,6 +90,8 @@ const Navigation = () => {
     navigate("/login");
     setIsOpen(false);
   };
+
+  const userName = user?.email?.split("@")[0] || "User";
 
   return (
     <nav className="bg-card/95 backdrop-blur-md shadow-lg sticky top-0 z-50 border-b border-border">
@@ -107,7 +144,7 @@ const Navigation = () => {
 
             {/* Profile/Login Section */}
             <div className="ml-4 flex items-center space-x-2">
-              {isAuthenticated ? (
+              {user ? (
                 <>
                   <Button
                     variant="ghost"
@@ -121,6 +158,9 @@ const Navigation = () => {
                       </AvatarFallback>
                     </Avatar>
                     <span className="text-sm">{userName}</span>
+                    {userRole === 'admin' && (
+                      <span className="text-xs bg-red-100 text-red-800 px-2 py-1 rounded">Admin</span>
+                    )}
                   </Button>
                   <Button
                     variant="ghost"
@@ -184,7 +224,7 @@ const Navigation = () => {
 
             {/* Mobile Profile/Login */}
             <div className="border-t border-border pt-2 mt-2">
-              {isAuthenticated ? (
+              {user ? (
                 <>
                   <Button
                     variant="ghost"
@@ -193,6 +233,9 @@ const Navigation = () => {
                   >
                     <User className="h-4 w-4" />
                     <span>Profile ({userName})</span>
+                    {userRole === 'admin' && (
+                      <span className="text-xs bg-red-100 text-red-800 px-2 py-1 rounded">Admin</span>
+                    )}
                   </Button>
                   <Button
                     variant="ghost"
