@@ -13,6 +13,7 @@ import StaffSearchResults from "@/components/StaffSearchResults";
 import DepartmentYearTimetable from "@/components/DepartmentYearTimetable";
 import AutoScheduleForm from "@/components/AutoScheduleForm";
 import TimetablePreview from "@/components/TimetablePreview";
+import ThemeToggle from "@/components/ThemeToggle";
 
 const TimetableView = () => {
   const [selectedDepartment, setSelectedDepartment] = useState("CSE");
@@ -112,8 +113,10 @@ const TimetableView = () => {
     setActiveTab("grid");
   };
 
-  const handleAutoGenerate = async (department: string, year: string, semester: string) => {
+  const handleAutoGenerate = async (department: string, year: string, semester: string, conditions: any) => {
     setIsGenerating(true);
+    
+    console.log("Generating with conditions:", conditions);
     
     // Mock data for demo - in real app, fetch from API
     const mockStaff = [
@@ -122,8 +125,8 @@ const TimetableView = () => {
     ];
 
     const mockSubjects = [
-      { id: "1", name: "Data Structures", code: "CS8391", type: "theory" as const, credits: 3, department, year, semester, priority: "morning" as const },
-      { id: "2", name: "Database Lab", code: "CS8392", type: "lab" as const, credits: 2, department, year, semester, priority: "afternoon" as const },
+      { id: "1", name: "Data Structures", code: "CS8391", type: "theory" as const, credits: 3, department, year, semester, priority: conditions.timePreference || "morning" as const },
+      { id: "2", name: "Database Lab", code: "CS8392", type: "lab" as const, credits: 2, department, year, semester, priority: conditions.prioritizeLabsInAfternoon ? "afternoon" as const : "morning" as const },
     ];
 
     const mockClassrooms = [
@@ -187,11 +190,12 @@ const TimetableView = () => {
         >
           <div>
             <h1 className="text-3xl font-bold text-foreground mb-2 font-montserrat">Timetable Management</h1>
-            <p className="text-muted-foreground">
+            <p className="text-foreground">
               {isAdmin ? "Manage department-wise and semester-wise timetables with automated scheduling" : "View department-wise and semester-wise timetables"}
             </p>
           </div>
-          <div className="flex flex-wrap gap-2 mt-4 md:mt-0">
+          <div className="flex flex-wrap gap-2 mt-4 md:mt-0 items-center">
+            <ThemeToggle />
             {isAdmin && (
               <>
                 <Button
@@ -325,8 +329,8 @@ const TimetableView = () => {
             {generatedTimetable && (
               <TimetablePreview
                 timetableData={generatedTimetable}
-                onSave={handleSaveGenerated}
-                onEdit={handleEditEntry}
+                onSave={() => console.log("Saving generated timetable:", generatedTimetable)}
+                onEdit={(entryId: string, updates: any) => console.log("Editing entry:", entryId, updates)}
                 isEditable={isAdmin}
               />
             )}
