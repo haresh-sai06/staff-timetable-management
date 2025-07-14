@@ -26,6 +26,10 @@ const StaffManagement = () => {
 
   useEffect(() => {
     const role = localStorage.getItem("userRole");
+    const email = localStorage.getItem("userEmail");
+    console.log("Debug - User Role:", role);
+    console.log("Debug - User Email:", email);
+    console.log("Debug - Is Admin:", role === "admin");
     setUserRole(role || "");
   }, []);
 
@@ -105,11 +109,38 @@ const StaffManagement = () => {
 
   const isAdmin = userRole === "admin";
 
+  const handleEditStaff = (staffId: string) => {
+    console.log("Edit staff:", staffId);
+    // TODO: Implement edit functionality
+  };
+
+  const handleDeleteStaff = (staffId: string) => {
+    console.log("Delete staff:", staffId);
+    // TODO: Implement delete functionality
+  };
+
+  const handleAddStaff = () => {
+    console.log("Add new staff");
+    // TODO: Implement add staff functionality
+  };
+
+  const handleAssignSubject = (staffId: string) => {
+    console.log("Assign subject to staff:", staffId);
+    // TODO: Implement assign subject functionality
+  };
+
   return (
     <div className="min-h-screen">
       <Navigation />
       
       <div className="container mx-auto px-4 py-8">
+        {/* Debug Info - Remove this in production */}
+        {process.env.NODE_ENV === 'development' && (
+          <div className="mb-4 p-2 bg-yellow-100 text-yellow-800 rounded text-sm">
+            Debug: User Role = "{userRole}" | Is Admin = {isAdmin.toString()}
+          </div>
+        )}
+
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -124,7 +155,10 @@ const StaffManagement = () => {
           </div>
           <div className="flex gap-2 mt-4 md:mt-0">
             {isAdmin && (
-              <Button className="bg-accent hover:bg-accent/90 text-accent-foreground">
+              <Button 
+                onClick={handleAddStaff}
+                className="bg-accent hover:bg-accent/90 text-accent-foreground"
+              >
                 <Plus className="h-4 w-4 mr-2" />
                 Add Staff
               </Button>
@@ -249,10 +283,20 @@ const StaffManagement = () => {
                     </div>
                     {isAdmin && (
                       <div className="flex gap-1">
-                        <Button variant="ghost" size="sm" className="hover:bg-accent/10">
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="hover:bg-accent/10"
+                          onClick={() => handleEditStaff(staff.id)}
+                        >
                           <Edit className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50">
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          onClick={() => handleDeleteStaff(staff.id)}
+                        >
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
@@ -311,7 +355,12 @@ const StaffManagement = () => {
                       View Schedule
                     </Button>
                     {isAdmin && (
-                      <Button variant="outline" size="sm" className="flex-1 border-border hover:bg-accent/10">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="flex-1 border-border hover:bg-accent/10"
+                        onClick={() => handleAssignSubject(staff.id)}
+                      >
                         Assign Subject
                       </Button>
                     )}
