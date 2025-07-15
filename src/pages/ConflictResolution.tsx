@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { AlertTriangle, Users, MapPin, Clock, CheckCircle, XCircle, Eye } from "lucide-react";
@@ -6,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useToast } from "@/hooks/use-toast";
 import Navigation from "@/components/Navigation";
 
 interface ConflictItem {
@@ -25,11 +25,12 @@ interface ConflictItem {
 }
 
 const ConflictResolution = () => {
+  const { toast } = useToast();
   const [selectedSeverity, setSelectedSeverity] = useState("all");
   const [selectedType, setSelectedType] = useState("all");
   const [selectedStatus, setSelectedStatus] = useState("pending");
 
-  const conflictData: ConflictItem[] = [
+  const initialConflictData: ConflictItem[] = [
     {
       id: "1",
       type: "staff",
@@ -108,6 +109,8 @@ const ConflictResolution = () => {
     }
   ];
 
+  const [conflictData, setConflictData] = useState<ConflictItem[]>(initialConflictData);
+
   const severityLevels = ["all", "high", "medium", "low"];
   const conflictTypes = ["all", "staff", "classroom", "student"];
   const statusOptions = ["all", "pending", "resolved", "ignored"];
@@ -171,7 +174,66 @@ const ConflictResolution = () => {
 
   const handleResolveConflict = (conflictId: string, suggestionIndex: number) => {
     console.log(`Resolving conflict ${conflictId} with suggestion ${suggestionIndex}`);
-    // In real implementation, this would update the conflict status
+    
+    setConflictData(prevData => 
+      prevData.map(conflict => 
+        conflict.id === conflictId 
+          ? { ...conflict, status: "resolved" as const }
+          : conflict
+      )
+    );
+
+    const conflict = conflictData.find(c => c.id === conflictId);
+    const suggestion = conflict?.suggestions[suggestionIndex];
+    
+    toast({
+      title: "Conflict Resolved",
+      description: `Applied solution: ${suggestion}`,
+    });
+  };
+
+  const handleMarkResolved = (conflictId: string) => {
+    setConflictData(prevData => 
+      prevData.map(conflict => 
+        conflict.id === conflictId 
+          ? { ...conflict, status: "resolved" as const }
+          : conflict
+      )
+    );
+
+    toast({
+      title: "Conflict Marked as Resolved",
+      description: "The conflict has been marked as resolved.",
+    });
+  };
+
+  const handleIgnoreConflict = (conflictId: string) => {
+    setConflictData(prevData => 
+      prevData.map(conflict => 
+        conflict.id === conflictId 
+          ? { ...conflict, status: "ignored" as const }
+          : conflict
+      )
+    );
+
+    toast({
+      title: "Conflict Ignored",
+      description: "The conflict has been marked as ignored.",
+    });
+  };
+
+  const handleAutoDetect = () => {
+    toast({
+      title: "Auto-Detection Started",
+      description: "Scanning for new scheduling conflicts...",
+    });
+
+    setTimeout(() => {
+      toast({
+        title: "Detection Complete",
+        description: "No new conflicts detected.",
+      });
+    }, 2000);
   };
 
   return (
@@ -192,7 +254,7 @@ const ConflictResolution = () => {
             </p>
           </div>
           <div className="flex gap-2 mt-4 md:mt-0">
-            <Button variant="outline">
+            <Button variant="outline" onClick={handleAutoDetect}>
               <Eye className="h-4 w-4 mr-2" />
               Auto-Detect
             </Button>
@@ -417,10 +479,20 @@ const ConflictResolution = () => {
                         <Button variant="outline" size="sm">
                           View Details
                         </Button>
-                        <Button variant="outline" size="sm" className="text-green-600 hover:text-green-700">
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="text-green-600 hover:text-green-700"
+                          onClick={() => handleMarkResolved(conflict.id)}
+                        >
                           Mark Resolved
                         </Button>
-                        <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700">
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="text-red-600 hover:text-red-700"
+                          onClick={() => handleIgnoreConflict(conflict.id)}
+                        >
                           Ignore
                         </Button>
                       </div>

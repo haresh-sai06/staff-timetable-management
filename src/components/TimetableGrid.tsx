@@ -1,10 +1,11 @@
 
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Clock, User, MapPin, BookOpen, AlertCircle } from "lucide-react";
+import { Clock, User, MapPin, BookOpen, AlertCircle, Plus } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
 
 interface TimetableEntry {
   id: string;
@@ -29,6 +30,7 @@ interface TimetableGridProps {
 }
 
 const TimetableGrid = ({ department, semester, viewMode }: TimetableGridProps) => {
+  const { toast } = useToast();
   const [timetableData, setTimetableData] = useState<TimetableEntry[]>([]);
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
 
@@ -99,6 +101,35 @@ const TimetableGrid = ({ department, semester, viewMode }: TimetableGridProps) =
     return role === "Prof" ? "bg-purple-100 text-purple-800" : "bg-blue-100 text-blue-800";
   };
 
+  const handleSlotClick = (day: string, timeSlot: string) => {
+    const slotId = `${day}-${timeSlot}`;
+    setSelectedSlot(selectedSlot === slotId ? null : slotId);
+    
+    toast({
+      title: "Time Slot Selected",
+      description: `Selected ${day} at ${timeSlot}`,
+    });
+  };
+
+  const handleAddClass = (day: string, timeSlot: string) => {
+    toast({
+      title: "Add Class",
+      description: `Opening form to add class on ${day} at ${timeSlot}`,
+    });
+    
+    // In a real app, this would open a modal or navigate to add class form
+    console.log(`Adding class for ${day} at ${timeSlot}`);
+  };
+
+  const handleClassClick = (entry: TimetableEntry) => {
+    toast({
+      title: "Class Details",
+      description: `${entry.subject} - ${entry.staff}`,
+    });
+    
+    console.log("Class details:", entry);
+  };
+
   return (
     <div className="space-y-6">
       {/* Mobile View */}
@@ -128,10 +159,12 @@ const TimetableGrid = ({ department, semester, viewMode }: TimetableGridProps) =
                               <motion.div
                                 key={entry.id}
                                 whileHover={{ scale: 1.02 }}
-                                className={`p-3 rounded-lg border ${
+                                whileTap={{ scale: 0.98 }}
+                                onClick={() => handleClassClick(entry)}
+                                className={`p-3 rounded-lg border cursor-pointer ${
                                   entry.hasConflict 
                                     ? "border-red-200 bg-red-50" 
-                                    : "border-gray-200 bg-white"
+                                    : "border-gray-200 bg-white hover:bg-gray-50"
                                 }`}
                               >
                                 <div className="flex items-start justify-between">
@@ -162,7 +195,15 @@ const TimetableGrid = ({ department, semester, viewMode }: TimetableGridProps) =
                             ))}
                           </div>
                         ) : (
-                          <div className="text-xs text-gray-400 italic">No class scheduled</div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleAddClass(day, timeSlot)}
+                            className="text-gray-400 hover:text-gray-600 w-full justify-start"
+                          >
+                            <Plus className="h-4 w-4 mr-2" />
+                            <span className="text-xs">Add Class</span>
+                          </Button>
                         )}
                       </div>
                     );
@@ -213,7 +254,7 @@ const TimetableGrid = ({ department, semester, viewMode }: TimetableGridProps) =
                             className={`border border-gray-300 p-2 h-24 align-top cursor-pointer hover:bg-gray-50 transition-colors ${
                               selectedSlot === slotId ? "bg-blue-50" : ""
                             }`}
-                            onClick={() => setSelectedSlot(selectedSlot === slotId ? null : slotId)}
+                            onClick={() => handleSlotClick(day, timeSlot)}
                           >
                             {slotData.length > 0 ? (
                               <div className="space-y-1">
@@ -221,10 +262,15 @@ const TimetableGrid = ({ department, semester, viewMode }: TimetableGridProps) =
                                   <motion.div
                                     key={entry.id}
                                     whileHover={{ scale: 1.02 }}
-                                    className={`p-2 rounded text-xs ${
+                                    whileTap={{ scale: 0.98 }}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleClassClick(entry);
+                                    }}
+                                    className={`p-2 rounded text-xs cursor-pointer ${
                                       entry.hasConflict
                                         ? "bg-red-100 border border-red-300"
-                                        : "bg-white border border-gray-200"
+                                        : "bg-white border border-gray-200 hover:bg-gray-50"
                                     } shadow-sm`}
                                   >
                                     <div className="font-medium text-gray-800 mb-1 leading-tight">
@@ -252,8 +298,13 @@ const TimetableGrid = ({ department, semester, viewMode }: TimetableGridProps) =
                                 <Button
                                   variant="ghost"
                                   size="sm"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleAddClass(day, timeSlot);
+                                  }}
                                   className="text-gray-400 hover:text-gray-600 h-full w-full"
                                 >
+                                  <Plus className="h-4 w-4 mr-1" />
                                   <span className="text-xs">Add Class</span>
                                 </Button>
                               </div>
@@ -288,6 +339,10 @@ const TimetableGrid = ({ department, semester, viewMode }: TimetableGridProps) =
         <div className="flex items-center space-x-2">
           <div className="w-4 h-4 bg-red-100 border border-red-300 rounded"></div>
           <span className="text-sm text-gray-700">Conflict Detected</span>
+        </div>
+        <div className="flex items-center space-x-2">
+          <div className="w-4 h-4 bg-blue-50 border border-blue-300 rounded"></div>
+          <span className="text-sm text-gray-700">Selected Slot</span>
         </div>
       </motion.div>
     </div>
