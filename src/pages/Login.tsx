@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { LogIn, Eye, EyeOff, GraduationCap } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,29 @@ const Login = () => {
   const [isSignUp, setIsSignUp] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  useEffect(() => {
+    // Check if user is already logged in
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        navigate("/");
+      }
+    };
+
+    checkAuth();
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        if (session) {
+          navigate("/");
+        }
+      }
+    );
+
+    return () => subscription.unsubscribe();
+  }, [navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,8 +59,11 @@ const Login = () => {
         
         toast({
           title: "Sign Up Successful",
-          description: "Please check your email to confirm your account",
+          description: "Account created successfully. You can now sign in.",
         });
+        
+        // Switch to sign in mode after successful signup
+        setIsSignUp(false);
       } else {
         const { error } = await supabase.auth.signInWithPassword({
           email,
@@ -50,13 +76,12 @@ const Login = () => {
           title: "Login Successful",
           description: `Welcome to SKCT Timetable Management`,
         });
-        
-        navigate("/");
       }
     } catch (error: any) {
+      console.error('Auth error:', error);
       toast({
         title: isSignUp ? "Sign Up Failed" : "Login Failed",
-        description: error.message,
+        description: error.message || "An error occurred during authentication",
         variant: "destructive",
       });
     } finally {
@@ -191,9 +216,18 @@ const Login = () => {
           </form>
 
           <div className="mt-6 text-center text-sm text-muted-foreground">
-            <p>Demo Admin Account:</p>
-            <p className="text-accent">admin@skct.edu / password123</p>
-            <p className="mt-2">Or create an account with "admin" in the email for admin access</p>
+            <p><strong>Demo Accounts:</strong></p>
+            <div className="space-y-1 mt-2">
+              <p className="text-accent">
+                <strong>Admin:</strong> admin@skct.edu / password123
+              </p>
+              <p className="text-muted-foreground">
+                <strong>User:</strong> user@skct.edu / password123
+              </p>
+            </div>
+            <p className="mt-3 text-xs">
+              Or create an account with "admin" in the email for admin access
+            </p>
           </div>
         </motion.div>
       </motion.div>

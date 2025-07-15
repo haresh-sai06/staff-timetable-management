@@ -1,12 +1,14 @@
 
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Users, Plus, Search, Edit, Trash2, Clock, Award } from "lucide-react";
+import { Users, Plus, Search, Clock, Award } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import Navigation from "@/components/Navigation";
+import StaffForm from "@/components/StaffForm";
+import StaffActions from "@/components/StaffActions";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
@@ -35,11 +37,12 @@ const StaffManagement = () => {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [staffData, setStaffData] = useState<Staff[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [editingStaff, setEditingStaff] = useState<Staff | null>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Check authentication and fetch user profile
     const checkAuth = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       
@@ -50,28 +53,33 @@ const StaffManagement = () => {
 
       setUser(session.user);
 
-      // Fetch user profile
-      const { data: profile, error } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', session.user.id)
-        .single();
+      // Fetch user profile with timeout to avoid infinite recursion
+      setTimeout(async () => {
+        try {
+          const { data: profile, error } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', session.user.id)
+            .single();
 
-      if (error) {
-        console.error('Error fetching profile:', error);
-        toast({
-          title: "Error",
-          description: "Failed to fetch user profile",
-          variant: "destructive",
-        });
-      } else {
-        setUserProfile(profile);
-      }
+          if (error) {
+            console.error('Error fetching profile:', error);
+            toast({
+              title: "Error",
+              description: "Failed to fetch user profile",
+              variant: "destructive",
+            });
+          } else {
+            setUserProfile(profile);
+          }
+        } catch (err) {
+          console.error('Profile fetch error:', err);
+        }
+      }, 0);
     };
 
     checkAuth();
 
-    // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (!session) {
@@ -86,8 +94,10 @@ const StaffManagement = () => {
   }, [navigate, toast]);
 
   useEffect(() => {
-    fetchStaff();
-  }, []);
+    if (user) {
+      fetchStaff();
+    }
+  }, [user]);
 
   const fetchStaff = async () => {
     try {
@@ -141,11 +151,11 @@ const StaffManagement = () => {
   const isAdmin = userProfile?.role === "admin";
 
   const handleEditStaff = (staffId: string) => {
-    console.log("Edit staff:", staffId);
-    toast({
-      title: "Feature Coming Soon",
-      description: "Staff editing functionality will be implemented soon",
-    });
+    const staff = staffData.find(s => s.id === staffId);
+    if (staff) {
+      setEditingStaff(staff);
+      setShowForm(true);
+    }
   };
 
   const handleDeleteStaff = async (staffId: string) => {
@@ -158,42 +168,53 @@ const StaffManagement = () => {
       return;
     }
 
-    try {
-      const { error } = await supabase
-        .from('staff')
-        .delete()
-        .eq('id', staffId);
+    if (confirm("Are you sure you want to delete this staff member?")) {
+      try {
+        const { error } = await supabase
+          .from('staff')
+          .delete()
+          .eq('id', staffId);
 
-      if (error) throw error;
+        if (error) throw error;
 
-      toast({
-        title: "Success",
-        description: "Staff member deleted successfully",
-      });
+        toast({
+          title: "Success",
+          description: "Staff member deleted successfully",
+        });
 
-      fetchStaff(); // Refresh the list
-    } catch (error: any) {
-      console.error('Error deleting staff:', error);
-      toast({
-        title: "Error",
-        description: "Failed to delete staff member",
-        variant: "destructive",
-      });
+        fetchStaff();
+      } catch (error: any) {
+        console.error('Error deleting staff:', error);
+        toast({
+          title: "Error",
+          description: "Failed to delete staff member",
+          variant: "destructive",
+        });
+      }
     }
   };
 
   const handleAddStaff = () => {
+    setEditingStaff(null);
+    setShowForm(true);
+  };
+
+  const handleViewStaff = (staffId: string) => {
     toast({
-      title: "Feature Coming Soon",
-      description: "Add staff functionality will be implemented soon",
+      title: "View Details",
+      description: "Staff details view will be implemented",
     });
   };
 
-  const handleAssignSubject = (staffId: string) => {
-    toast({
-      title: "Feature Coming Soon",
-      description: "Subject assignment functionality will be implemented soon",
-    });
+  const handleFormSave = () => {
+    setShowForm(false);
+    setEditingStaff(null);
+    fetchStaff();
+  };
+
+  const handleFormCancel = () => {
+    setShowForm(false);
+    setEditingStaff(null);
   };
 
   if (loading) {
@@ -204,6 +225,21 @@ const StaffManagement = () => {
           <div className="flex justify-center items-center h-64">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent"></div>
           </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (showForm) {
+    return (
+      <div className="min-h-screen">
+        <Navigation />
+        <div className="container mx-auto px-4 py-8">
+          <StaffForm
+            staff={editingStaff || undefined}
+            onSave={handleFormSave}
+            onCancel={handleFormCancel}
+          />
         </div>
       </div>
     );
@@ -361,26 +397,13 @@ const StaffManagement = () => {
                       <CardTitle className="text-lg text-foreground">{staff.name}</CardTitle>
                       <p className="text-sm text-muted-foreground">{staff.email}</p>
                     </div>
-                    {isAdmin && (
-                      <div className="flex gap-1">
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          className="hover:bg-accent/10"
-                          onClick={() => handleEditStaff(staff.id)}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                          onClick={() => handleDeleteStaff(staff.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    )}
+                    <StaffActions
+                      staffId={staff.id}
+                      isAdmin={isAdmin}
+                      onEdit={handleEditStaff}
+                      onDelete={handleDeleteStaff}
+                      onView={handleViewStaff}
+                    />
                   </div>
                 </CardHeader>
                 
@@ -428,23 +451,6 @@ const StaffManagement = () => {
                       ))}
                     </div>
                   </div>
-
-                  {/* Actions */}
-                  <div className="flex gap-2 pt-2">
-                    <Button variant="outline" size="sm" className="flex-1 border-border hover:bg-accent/10">
-                      View Schedule
-                    </Button>
-                    {isAdmin && (
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="flex-1 border-border hover:bg-accent/10"
-                        onClick={() => handleAssignSubject(staff.id)}
-                      >
-                        Assign Subject
-                      </Button>
-                    )}
-                  </div>
                 </CardContent>
               </Card>
             </motion.div>
@@ -460,7 +466,7 @@ const StaffManagement = () => {
           >
             <Users className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
             <h3 className="text-lg font-semibold text-foreground mb-2">No staff members found</h3>
-            <p className="text-muted-foreground">Try adjusting your search criteria or add new staff members.</p>
+            <p className="text-muted-foreground">Try adjusting your search criteria{isAdmin ? " or add new staff members" : ""}.</p>
           </motion.div>
         )}
       </div>
