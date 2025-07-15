@@ -1,11 +1,12 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { MapPin, Plus, Search, Edit, Trash2, Users, Monitor, Beaker } from "lucide-react";
+import { MapPin, Plus, Search, Edit, Trash2, Users, Monitor, Beaker, Calendar, BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/hooks/use-toast";
 import Navigation from "@/components/Navigation";
 
 interface Classroom {
@@ -23,6 +24,7 @@ interface Classroom {
 const ClassroomManagement = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedType, setSelectedType] = useState("all");
+  const { toast } = useToast();
 
   const classroomData: Classroom[] = [
     {
@@ -90,6 +92,47 @@ const ClassroomManagement = () => {
     return matchesSearch && matchesType;
   });
 
+  const handleAddClassroom = () => {
+    toast({
+      title: "Add Classroom",
+      description: "Opening classroom creation form...",
+    });
+    console.log("Adding new classroom");
+  };
+
+  const handleViewSchedule = (room: Classroom) => {
+    toast({
+      title: "View Schedule",
+      description: `Opening schedule for ${room.name}`,
+    });
+    console.log("Viewing schedule for room:", room.name);
+  };
+
+  const handleBookRoom = (room: Classroom) => {
+    toast({
+      title: "Book Room",
+      description: `Opening booking form for ${room.name}`,
+    });
+    console.log("Booking room:", room.name);
+  };
+
+  const handleEditRoom = (room: Classroom) => {
+    toast({
+      title: "Edit Room",
+      description: `Opening edit form for ${room.name}`,
+    });
+    console.log("Editing room:", room.name);
+  };
+
+  const handleDeleteRoom = (room: Classroom) => {
+    toast({
+      title: "Delete Room",
+      description: `Are you sure you want to delete ${room.name}?`,
+      variant: "destructive",
+    });
+    console.log("Deleting room:", room.name);
+  };
+
   const getTypeIcon = (type: string) => {
     switch (type) {
       case "Computer Lab":
@@ -148,7 +191,10 @@ const ClassroomManagement = () => {
             </p>
           </div>
           <div className="flex gap-2 mt-4 md:mt-0">
-            <Button className="bg-indigo-600 hover:bg-indigo-700">
+            <Button 
+              className="bg-indigo-600 hover:bg-indigo-700"
+              onClick={handleAddClassroom}
+            >
               <Plus className="h-4 w-4 mr-2" />
               Add Classroom
             </Button>
@@ -280,10 +326,19 @@ const ClassroomManagement = () => {
                         </div>
                       </div>
                       <div className="flex gap-1">
-                        <Button variant="ghost" size="sm">
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => handleEditRoom(room)}
+                        >
                           <Edit className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700">
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="text-red-600 hover:text-red-700"
+                          onClick={() => handleDeleteRoom(room)}
+                        >
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
@@ -339,10 +394,22 @@ const ClassroomManagement = () => {
 
                     {/* Actions */}
                     <div className="flex gap-2 pt-2">
-                      <Button variant="outline" size="sm" className="flex-1">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="flex-1"
+                        onClick={() => handleViewSchedule(room)}
+                      >
+                        <Calendar className="h-4 w-4 mr-1" />
                         View Schedule
                       </Button>
-                      <Button variant="outline" size="sm" className="flex-1">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="flex-1"
+                        onClick={() => handleBookRoom(room)}
+                      >
+                        <BookOpen className="h-4 w-4 mr-1" />
                         Book Room
                       </Button>
                     </div>
