@@ -9,6 +9,25 @@ import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
+// Utility function to clean up auth state
+const cleanupAuthState = () => {
+  // Remove all Supabase auth keys from localStorage
+  Object.keys(localStorage).forEach((key) => {
+    if (key.startsWith('supabase.auth.') || key.includes('sb-')) {
+      localStorage.removeItem(key);
+    }
+  });
+  
+  // Remove from sessionStorage if in use
+  if (typeof sessionStorage !== 'undefined') {
+    Object.keys(sessionStorage).forEach((key) => {
+      if (key.startsWith('supabase.auth.') || key.includes('sb-')) {
+        sessionStorage.removeItem(key);
+      }
+    });
+  }
+};
+
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -46,8 +65,19 @@ const Login = () => {
     setIsLoading(true);
 
     try {
+      // Clean up existing auth state first
+      cleanupAuthState();
+      
+      // Attempt global sign out to clear any existing sessions
+      try {
+        await supabase.auth.signOut({ scope: 'global' });
+      } catch (err) {
+        // Continue even if this fails
+        console.log('Global signout attempt:', err);
+      }
+
       if (isSignUp) {
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: {
@@ -57,31 +87,72 @@ const Login = () => {
         
         if (error) throw error;
         
-        toast({
-          title: "Sign Up Successful",
-          description: "Account created successfully. You can now sign in.",
-        });
-        
-        // Switch to sign in mode after successful signup
-        setIsSignUp(false);
+        // If signup is successful and no email confirmation is required
+        if (data.user && !data.user.email_confirmed_at && data.session) {
+          toast({
+            title: "Account Created",
+            description: "Account created successfully! You are now signed in.",
+          });
+          // Force page reload to ensure clean state
+          window.location.href = '/';
+        } else if (data.user && !data.session) {
+          toast({
+            title: "Check Your Email",
+            description: "Please check your email and click the confirmation link.",
+          });
+          setIsSignUp(false);
+        } else {
+          toast({
+            title: "Account Created",
+            description: "Account created successfully! You are now signed in.",
+          });
+          // Force page reload to ensure clean state
+          window.location.href = '/';
+        }
       } else {
-        const { error } = await supabase.auth.signInWithPassword({
+        const { data, error } = await supabase.auth.signInWithPassword({
           email,
           password,
         });
         
-        if (error) throw error;
+        if (error) {
+          // If login fails due to email not confirmed, try to resend confirmation
+          if (error.message.includes('Email not confirmed')) {
+            toast({
+              title: "Email Not Confirmed",
+              description: "Your email hasn't been confirmed. Please check your email or create a new account.",
+              variant: "destructive",
+            });
+            return;
+          }
+          throw error;
+        }
         
-        toast({
-          title: "Login Successful",
-          description: `Welcome to SKCT Timetable Management`,
-        });
+        if (data.user) {
+          toast({
+            title: "Login Successful",
+            description: `Welcome to SKCT Timetable Management`,
+          });
+          // Force page reload to ensure clean state
+          window.location.href = '/';
+        }
       }
     } catch (error: any) {
       console.error('Auth error:', error);
+      let errorMessage = error.message || "An error occurred during authentication";
+      
+      // Provide more specific error messages
+      if (error.message?.includes('Invalid login credentials')) {
+        errorMessage = "Invalid email or password. Please check your credentials.";
+      } else if (error.message?.includes('Email not confirmed')) {
+        errorMessage = "Please confirm your email address or create a new account.";
+      } else if (error.message?.includes('Too many requests')) {
+        errorMessage = "Too many login attempts. Please wait a moment and try again.";
+      }
+      
       toast({
         title: isSignUp ? "Sign Up Failed" : "Login Failed",
-        description: error.message || "An error occurred during authentication",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -166,7 +237,7 @@ const Login = () => {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="Enter your email"
+                placeholder="admin@skct.edu.in"
                 className="mt-1"
                 required
               />
@@ -216,17 +287,17 @@ const Login = () => {
           </form>
 
           <div className="mt-6 text-center text-sm text-muted-foreground">
-            <p><strong>Demo Accounts:</strong></p>
+            <p><strong>For Testing:</strong></p>
             <div className="space-y-1 mt-2">
               <p className="text-accent">
-                <strong>Admin:</strong> admin@skct.edu / password123
+                Create account with <strong>admin@skct.edu.in</strong> for admin access
               </p>
               <p className="text-muted-foreground">
-                <strong>User:</strong> user@skct.edu / password123
+                Create account with <strong>user@skct.edu.in</strong> for user access
               </p>
             </div>
             <p className="mt-3 text-xs">
-              Or create an account with "admin" in the email for admin access
+              Use any email ending with <strong>.edu.in</strong> and any password
             </p>
           </div>
         </motion.div>
