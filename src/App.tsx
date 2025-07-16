@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { motion } from "framer-motion";
+import AuthGuard from "./components/AuthGuard";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Profile from "./pages/Profile";
@@ -16,7 +17,14 @@ import ConflictResolution from "./pages/ConflictResolution";
 import NotFound from "./pages/NotFound";
 import MobileSidebar from "./components/MobileSidebar";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      retry: 1,
+    },
+  },
+});
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -31,7 +39,6 @@ const App = () => (
             style={{
               backgroundImage: `url('https://image-static.collegedunia.com/public/reviewPhotos/389741/sri-krishna-college-of-technology-coimbatore-215488.jpg')`,
               backgroundPosition: "center 70%"
-
             }}
           />
           
@@ -56,14 +63,42 @@ const App = () => (
             className="relative z-20 min-h-screen"
           >
             <Routes>
-              <Route path="/" element={<Index />} />
               <Route path="/login" element={<Login />} />
-              <Route path="/profile" element={<Profile />} />
-              <Route path="/issues" element={<Issues />} />
-              <Route path="/timetable" element={<TimetableView />} />
-              <Route path="/staff" element={<StaffManagement />} />
-              <Route path="/classrooms" element={<ClassroomManagement />} />
-              <Route path="/conflicts" element={<ConflictResolution />} />
+              <Route path="/" element={
+                <AuthGuard>
+                  <Index />
+                </AuthGuard>
+              } />
+              <Route path="/profile" element={
+                <AuthGuard>
+                  <Profile />
+                </AuthGuard>
+              } />
+              <Route path="/issues" element={
+                <AuthGuard>
+                  <Issues />
+                </AuthGuard>
+              } />
+              <Route path="/timetable" element={
+                <AuthGuard>
+                  <TimetableView />
+                </AuthGuard>
+              } />
+              <Route path="/staff" element={
+                <AuthGuard>
+                  <StaffManagement />
+                </AuthGuard>
+              } />
+              <Route path="/classrooms" element={
+                <AuthGuard>
+                  <ClassroomManagement />
+                </AuthGuard>
+              } />
+              <Route path="/conflicts" element={
+                <AuthGuard>
+                  <ConflictResolution />
+                </AuthGuard>
+              } />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </motion.div>

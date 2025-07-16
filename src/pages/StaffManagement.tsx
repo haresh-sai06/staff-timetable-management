@@ -11,7 +11,6 @@ import StaffForm from "@/components/StaffForm";
 import StaffActions from "@/components/StaffActions";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { useNavigate } from "react-router-dom";
 import type { User } from "@supabase/supabase-js";
 
 interface Staff {
@@ -40,64 +39,102 @@ const StaffManagement = () => {
   const [showForm, setShowForm] = useState(false);
   const [editingStaff, setEditingStaff] = useState<Staff | null>(null);
   const { toast } = useToast();
-  const navigate = useNavigate();
 
   useEffect(() => {
-    const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session) {
-        navigate("/login");
-        return;
-      }
+    let mounted = true;
 
-      setUser(session.user);
+    const checkAuthAndFetchData = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (!mounted) return;
 
-      // Fetch user profile with timeout to avoid infinite recursion
-      setTimeout(async () => {
-        try {
-          const { data: profile, error } = await supabase
-            .from('profiles')
-            .select('role')
-            .eq('id', session.user.id)
-            .single();
-
-          if (error) {
-            console.error('Error fetching profile:', error);
-            toast({
-              title: "Error",
-              description: "Failed to fetch user profile",
-              variant: "destructive",
-            });
-          } else {
-            setUserProfile(profile);
-          }
-        } catch (err) {
-          console.error('Profile fetch error:', err);
+        if (error) {
+          console.error('Auth error:', error);
+          setLoading(false);
+          return;
         }
-      }, 0);
+
+        if (session?.user) {
+          setUser(session.user);
+          
+          // Fetch user profile
+          try {
+            const { data: profile, error: profileError } = await supabase
+              .from('profiles')
+              .select('role')
+              .eq('id', session.user.id)
+              .single();
+
+            if (!profileError && profile) {
+              setUserProfile(profile);
+            } else {
+              // Fallback role based on email
+              setUserProfile({
+                role: session.user.email?.includes('admin') ? 'admin' : 'user'
+              });
+            }
+          } catch (err) {
+            console.error('Profile fetch error:', err);
+            setUserProfile({
+              role: session.user.email?.includes('admin') ? 'admin' : 'user'
+            });
+          }
+
+          // Fetch staff data
+          await fetchStaff();
+        }
+      } catch (error) {
+        console.error('Error in checkAuthAndFetchData:', error);
+      } finally {
+        if (mounted) {
+          setLoading(false);
+        }
+      }
     };
 
-    checkAuth();
+    checkAuthAndFetchData();
 
+    // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        if (!session) {
-          navigate("/login");
-        } else {
+        if (!mounted) return;
+
+        if (event === 'SIGNED_OUT' || !session) {
+          setUser(null);
+          setUserProfile(null);
+          setStaffData([]);
+        } else if (event === 'SIGNED_IN' && session) {
           setUser(session.user);
+          
+          setTimeout(async () => {
+            if (mounted) {
+              try {
+                const { data: profile } = await supabase
+                  .from('profiles')
+                  .select('role')
+                  .eq('id', session.user.id)
+                  .single();
+                
+                setUserProfile(profile || {
+                  role: session.user.email?.includes('admin') ? 'admin' : 'user'
+                });
+                
+                await fetchStaff();
+              } catch (err) {
+                console.error('Error fetching profile on auth change:', err);
+              }
+            }
+          }, 100);
         }
       }
     );
 
-    return () => subscription.unsubscribe();
-  }, [navigate, toast]);
-
-  useEffect(() => {
-    if (user) {
-      fetchStaff();
-    }
-  }, [user]);
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
+  }, []);
 
   const fetchStaff = async () => {
     try {
@@ -116,8 +153,6 @@ const StaffManagement = () => {
         description: "Failed to fetch staff data",
         variant: "destructive",
       });
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -223,7 +258,10 @@ const StaffManagement = () => {
         <Navigation />
         <div className="container mx-auto px-4 py-8">
           <div className="flex justify-center items-center h-64">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent"></div>
+            <div className="flex flex-col items-center space-y-4">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent"></div>
+              <p className="text-muted-foreground">Loading staff data...</p>
+            </div>
           </div>
         </div>
       </div>
@@ -429,7 +467,7 @@ const StaffManagement = () => {
                     <div className="w-full bg-white/50 rounded-full h-2">
                       <motion.div
                         initial={{ width: 0 }}
-                        animate={{ width: `${(staff.current_hours / staff.max_hours) * 100}%` }}
+                        animate={{ width: `${Math.min((staff.current_hours / staff.max_hours) * 100, 100)}%` }}
                         transition={{ delay: 0.5 + index * 0.1, duration: 0.8 }}
                         className={`h-2 rounded-full ${
                           staff.current_hours >= staff.max_hours * 0.9 ? "bg-red-500" :
@@ -458,7 +496,7 @@ const StaffManagement = () => {
         </motion.div>
 
         {/* Empty State */}
-        {filteredStaff.length === 0 && (
+        {filteredStaff.length === 0 && !loading && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}

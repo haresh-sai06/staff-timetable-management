@@ -11,20 +11,22 @@ import { supabase } from "@/integrations/supabase/client";
 
 // Utility function to clean up auth state
 const cleanupAuthState = () => {
-  // Remove all Supabase auth keys from localStorage
-  Object.keys(localStorage).forEach((key) => {
-    if (key.startsWith('supabase.auth.') || key.includes('sb-')) {
-      localStorage.removeItem(key);
-    }
-  });
-  
-  // Remove from sessionStorage if in use
-  if (typeof sessionStorage !== 'undefined') {
-    Object.keys(sessionStorage).forEach((key) => {
+  try {
+    Object.keys(localStorage).forEach((key) => {
       if (key.startsWith('supabase.auth.') || key.includes('sb-')) {
-        sessionStorage.removeItem(key);
+        localStorage.removeItem(key);
       }
     });
+    
+    if (typeof sessionStorage !== 'undefined') {
+      Object.keys(sessionStorage).forEach((key) => {
+        if (key.startsWith('supabase.auth.') || key.includes('sb-')) {
+          sessionStorage.removeItem(key);
+        }
+      });
+    }
+  } catch (error) {
+    console.error('Error cleaning up auth state:', error);
   }
 };
 
@@ -34,15 +36,29 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const navigate = useNavigate();
   const { toast } = useToast();
 
   useEffect(() => {
-    // Check if user is already logged in
+    let mounted = true;
+
     const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        navigate("/");
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (!mounted) return;
+
+        if (!error && session) {
+          navigate("/");
+          return;
+        }
+      } catch (error) {
+        console.error('Error checking auth:', error);
+      } finally {
+        if (mounted) {
+          setIsCheckingAuth(false);
+        }
       }
     };
 
@@ -51,13 +67,18 @@ const Login = () => {
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
-        if (session) {
+        if (!mounted) return;
+
+        if (session && event === 'SIGNED_IN') {
           navigate("/");
         }
       }
     );
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, [navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -72,7 +93,6 @@ const Login = () => {
       try {
         await supabase.auth.signOut({ scope: 'global' });
       } catch (err) {
-        // Continue even if this fails
         console.log('Global signout attempt:', err);
       }
 
@@ -87,27 +107,18 @@ const Login = () => {
         
         if (error) throw error;
         
-        // If signup is successful and no email confirmation is required
-        if (data.user && !data.user.email_confirmed_at && data.session) {
+        if (data.user && data.session) {
           toast({
             title: "Account Created",
             description: "Account created successfully! You are now signed in.",
           });
-          // Force page reload to ensure clean state
-          window.location.href = '/';
+          navigate("/");
         } else if (data.user && !data.session) {
           toast({
             title: "Check Your Email",
             description: "Please check your email and click the confirmation link.",
           });
           setIsSignUp(false);
-        } else {
-          toast({
-            title: "Account Created",
-            description: "Account created successfully! You are now signed in.",
-          });
-          // Force page reload to ensure clean state
-          window.location.href = '/';
         }
       } else {
         const { data, error } = await supabase.auth.signInWithPassword({
@@ -116,7 +127,6 @@ const Login = () => {
         });
         
         if (error) {
-          // If login fails due to email not confirmed, try to resend confirmation
           if (error.message.includes('Email not confirmed')) {
             toast({
               title: "Email Not Confirmed",
@@ -133,15 +143,13 @@ const Login = () => {
             title: "Login Successful",
             description: `Welcome to SKCT Timetable Management`,
           });
-          // Force page reload to ensure clean state
-          window.location.href = '/';
+          navigate("/");
         }
       }
     } catch (error: any) {
       console.error('Auth error:', error);
       let errorMessage = error.message || "An error occurred during authentication";
       
-      // Provide more specific error messages
       if (error.message?.includes('Invalid login credentials')) {
         errorMessage = "Invalid email or password. Please check your credentials.";
       } else if (error.message?.includes('Email not confirmed')) {
@@ -159,6 +167,17 @@ const Login = () => {
       setIsLoading(false);
     }
   };
+
+  if (isCheckingAuth) {
+    return (
+      <div className="min-h-screen skct-gradient flex items-center justify-center p-4">
+        <div className="flex flex-col items-center space-y-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent"></div>
+          <p className="text-muted-foreground">Checking authentication...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen skct-gradient flex items-center justify-center p-4">

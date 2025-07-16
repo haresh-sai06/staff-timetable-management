@@ -10,43 +10,85 @@ import { supabase } from "@/integrations/supabase/client";
 import ThemeToggle from "@/components/ThemeToggle";
 import type { User, Session } from "@supabase/supabase-js";
 
+interface UserProfile {
+  id: string;
+  email: string;
+  full_name: string | null;
+  role: string | null;
+  department: string | null;
+}
+
 const Navigation = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
-  const [userProfile, setUserProfile] = useState<any>(null);
-  const [userRole, setUserRole] = useState<string>("");
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
 
   useEffect(() => {
+    let mounted = true;
+
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        if (!mounted) return;
+
         console.log("Auth state changed:", event, session?.user?.email);
+        setSession(session);
+        setUser(session?.user ?? null);
+        
+        if (session?.user && mounted) {
+          // Defer profile fetching to avoid potential deadlocks
+          setTimeout(() => {
+            if (mounted) {
+              fetchUserProfile(session.user.id);
+            }
+          }, 100);
+        } else {
+          setUserProfile(null);
+          setLoading(false);
+        }
+      }
+    );
+
+    // Check for existing session
+    const checkInitialSession = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (!mounted) return;
+
+        if (error) {
+          console.error("Error getting session:", error);
+          setLoading(false);
+          return;
+        }
+
         setSession(session);
         setUser(session?.user ?? null);
         
         if (session?.user) {
           await fetchUserProfile(session.user.id);
         } else {
-          setUserProfile(null);
-          setUserRole("");
+          setLoading(false);
+        }
+      } catch (error) {
+        console.error("Error checking initial session:", error);
+        if (mounted) {
+          setLoading(false);
         }
       }
-    );
+    };
 
-    // Check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        fetchUserProfile(session.user.id);
-      }
-    });
+    checkInitialSession();
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const fetchUserProfile = async (userId: string) => {
@@ -59,20 +101,28 @@ const Navigation = () => {
 
       if (error) {
         console.error("Error fetching profile:", error);
+        // Create a basic profile from user data if profile doesn't exist
+        if (user?.email) {
+          setUserProfile({
+            id: userId,
+            email: user.email,
+            full_name: user.email.split("@")[0],
+            role: user.email.includes('admin') ? 'admin' : 'user',
+            department: null
+          });
+        }
+        setLoading(false);
         return;
       }
 
       if (profile) {
         console.log("Fetched profile:", profile);
         setUserProfile(profile);
-        setUserRole(profile.role || 'user');
-        
-        // Also update localStorage for immediate access
-        localStorage.setItem("userName", profile.full_name || profile.email?.split("@")[0] || "User");
-        localStorage.setItem("userRole", profile.role || 'user');
       }
     } catch (error) {
       console.error("Error in fetchUserProfile:", error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -89,20 +139,29 @@ const Navigation = () => {
 
   const handleLogout = async () => {
     try {
-      await supabase.auth.signOut();
+      // Clear local state first
+      setUser(null);
+      setSession(null);
+      setUserProfile(null);
+      
+      // Clear localStorage
       localStorage.removeItem("userName");
       localStorage.removeItem("userRole");
+      
+      // Sign out from Supabase
+      await supabase.auth.signOut({ scope: 'global' });
+      
       toast({
         title: "Logged out",
         description: "You have been successfully logged out",
       });
-      navigate("/login");
+      
+      // Force navigation to login
+      window.location.href = "/login";
     } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
+      console.error("Logout error:", error);
+      // Force logout even if there's an error
+      window.location.href = "/login";
     }
   };
 
@@ -118,6 +177,13 @@ const Navigation = () => {
 
   const userName = userProfile?.full_name || user?.email?.split("@")[0] || "User";
   const userEmail = userProfile?.email || user?.email || "";
+  const userRole = userProfile?.role || 'user';
+  const isAdmin = userRole === 'admin';
+
+  // Don't show navigation on login page
+  if (location.pathname === '/login') {
+    return null;
+  }
 
   return (
     <nav className="bg-card/95 backdrop-blur-md shadow-lg sticky top-0 z-50 border-b border-border">
@@ -173,7 +239,7 @@ const Navigation = () => {
 
             {/* Profile/Login Section */}
             <div className="ml-4 flex items-center space-x-2">
-              {user ? (
+              {user && !loading ? (
                 <>
                   <Button
                     variant="ghost"
@@ -182,7 +248,7 @@ const Navigation = () => {
                   >
                     <Avatar className="h-6 w-6">
                       <AvatarImage 
-                        src={userProfile?.profile_picture || ""} 
+                        src="" 
                         alt={userName} 
                       />
                       <AvatarFallback className="bg-accent text-accent-foreground text-xs">
@@ -195,7 +261,7 @@ const Navigation = () => {
                         <span className="text-xs text-muted-foreground">{userEmail}</span>
                       )}
                     </div>
-                    {userRole === 'admin' && (
+                    {isAdmin && (
                       <span className="text-xs bg-red-100 text-red-800 px-2 py-1 rounded">Admin</span>
                     )}
                   </Button>
@@ -208,6 +274,8 @@ const Navigation = () => {
                     <LogOut className="h-4 w-4" />
                   </Button>
                 </>
+              ) : loading ? (
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-accent"></div>
               ) : (
                 <Button
                   onClick={handleLoginClick}
@@ -262,7 +330,7 @@ const Navigation = () => {
 
             {/* Mobile Profile/Login */}
             <div className="border-t border-border pt-2 mt-2">
-              {user ? (
+              {user && !loading ? (
                 <>
                   <Button
                     variant="ghost"
@@ -271,7 +339,7 @@ const Navigation = () => {
                   >
                     <Avatar className="h-6 w-6">
                       <AvatarImage 
-                        src={userProfile?.profile_picture || ""} 
+                        src="" 
                         alt={userName} 
                       />
                       <AvatarFallback className="bg-accent text-accent-foreground text-xs">
@@ -280,7 +348,7 @@ const Navigation = () => {
                     </Avatar>
                     <div className="flex flex-col items-start">
                       <span className="text-sm">{userName}</span>
-                      {userRole === 'admin' && (
+                      {isAdmin && (
                         <span className="text-xs bg-red-100 text-red-800 px-2 py-1 rounded">Admin</span>
                       )}
                     </div>
@@ -294,6 +362,10 @@ const Navigation = () => {
                     <span>Logout</span>
                   </Button>
                 </>
+              ) : loading ? (
+                <div className="flex justify-center py-4">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-accent"></div>
+                </div>
               ) : (
                 <Button
                   onClick={handleLoginClick}
