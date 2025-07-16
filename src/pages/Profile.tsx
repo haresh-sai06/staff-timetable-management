@@ -1,5 +1,5 @@
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
 import { User, Camera, Save, Edit3, Shield, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -7,19 +7,65 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 import Navigation from "@/components/Navigation";
 
 const Profile = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [profileData, setProfileData] = useState({
-    name: localStorage.getItem("userName") || "User",
-    email: localStorage.getItem("userEmail") || "user@skct.edu",
-    role: localStorage.getItem("userRole") || "user",
+    name: "",
+    email: "",
+    role: "user",
     profilePicture: "",
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+
+  useEffect(() => {
+    loadUserProfile();
+  }, []);
+
+  const loadUserProfile = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single();
+
+        if (profile) {
+          setProfileData({
+            name: profile.full_name || user.email?.split("@")[0] || "User",
+            email: profile.email || user.email || "",
+            role: profile.role || "user",
+            profilePicture: "", // Will be implemented with storage
+          });
+        } else {
+          // Fallback to user data
+          setProfileData({
+            name: user.email?.split("@")[0] || "User",
+            email: user.email || "",
+            role: "user",
+            profilePicture: "",
+          });
+        }
+      }
+    } catch (error) {
+      console.error("Error loading profile:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load profile",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoadingProfile(false);
+    }
+  };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -47,16 +93,45 @@ const Profile = () => {
   const handleSave = async () => {
     setIsLoading(true);
     
-    // Mock API call - replace with actual API
-    setTimeout(() => {
-      localStorage.setItem("userName", profileData.name);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (user) {
+        const { error } = await supabase
+          .from('profiles')
+          .upsert({
+            id: user.id,
+            email: profileData.email,
+            full_name: profileData.name,
+            role: profileData.role,
+            updated_at: new Date().toISOString(),
+          }, {
+            onConflict: 'id'
+          });
+
+        if (error) {
+          throw error;
+        }
+
+        // Update localStorage for immediate UI updates
+        localStorage.setItem("userName", profileData.name);
+        
+        toast({
+          title: "Profile Updated",
+          description: "Your profile has been successfully updated",
+        });
+        setIsEditing(false);
+      }
+    } catch (error) {
+      console.error("Error updating profile:", error);
       toast({
-        title: "Profile Updated",
-        description: "Your profile has been successfully updated",
+        title: "Error",
+        description: "Failed to update profile",
+        variant: "destructive",
       });
-      setIsEditing(false);
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
   const handleInputChange = (field: string, value: string) => {
@@ -73,6 +148,17 @@ const Profile = () => {
   const getRoleIcon = (role: string) => {
     return role === "admin" ? Shield : Users;
   };
+
+  if (isLoadingProfile) {
+    return (
+      <div className="min-h-screen skct-gradient">
+        <Navigation />
+        <div className="container mx-auto px-4 py-8 flex items-center justify-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent"></div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen skct-gradient">
@@ -140,7 +226,7 @@ const Profile = () => {
                 className="flex flex-col items-center space-y-4"
               >
                 <div className="relative">
-                  <Avatar className="h-24 w-24">
+                  <Avatar className="h-24 w-24 border-2 border-accent">
                     <AvatarImage src={profileData.profilePicture} alt={profileData.name} />
                     <AvatarFallback className="bg-primary text-primary-foreground text-xl font-bold">
                       {profileData.name.charAt(0).toUpperCase()}
@@ -148,12 +234,14 @@ const Profile = () => {
                   </Avatar>
                   
                   {isEditing && (
-                    <button
+                    <motion.button
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
                       onClick={() => fileInputRef.current?.click()}
                       className="absolute bottom-0 right-0 bg-accent hover:bg-accent/90 text-accent-foreground rounded-full p-2 shadow-lg transition-colors"
                     >
                       <Camera className="h-4 w-4" />
-                    </button>
+                    </motion.button>
                   )}
                 </div>
 

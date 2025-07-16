@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Calendar, Filter, Plus, Download, Eye, Search, X } from "lucide-react";
@@ -14,12 +15,15 @@ import DepartmentYearTimetable from "@/components/DepartmentYearTimetable";
 import AutoScheduleForm from "@/components/AutoScheduleForm";
 import TimetablePreview from "@/components/TimetablePreview";
 import ThemeToggle from "@/components/ThemeToggle";
+import ExportTimetable from "@/components/ExportTimetable";
+import AddClassModal from "@/components/AddClassModal";
 
 const TimetableView = () => {
   const [selectedDepartment, setSelectedDepartment] = useState("CSE");
   const [selectedSemester, setSelectedSemester] = useState("odd");
   const [viewMode, setViewMode] = useState("department"); // department, staff, general
   const [showAddEntry, setShowAddEntry] = useState(false);
+  const [showAddClassModal, setShowAddClassModal] = useState(false);
   const [userRole, setUserRole] = useState("");
   const [activeTab, setActiveTab] = useState("grid");
   const [searchResults, setSearchResults] = useState(null);
@@ -28,6 +32,7 @@ const TimetableView = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedTimetable, setGeneratedTimetable] = useState(null);
   const [schedulingConflicts, setSchedulingConflicts] = useState([]);
+  const [addClassContext, setAddClassContext] = useState({ day: "", timeSlot: "" });
 
   useEffect(() => {
     const role = localStorage.getItem("userRole");
@@ -177,6 +182,11 @@ const TimetableView = () => {
     console.log("Editing entry:", entryId, updates);
   };
 
+  const handleAddClassFromGrid = (day: string, timeSlot: string) => {
+    setAddClassContext({ day, timeSlot });
+    setShowAddClassModal(true);
+  };
+
   return (
     <div className="min-h-screen">
       <Navigation />
@@ -196,6 +206,10 @@ const TimetableView = () => {
           </div>
           <div className="flex flex-wrap gap-2 mt-4 md:mt-0 items-center">
             <ThemeToggle />
+            <ExportTimetable 
+              department={selectedDepartment} 
+              semester={selectedSemester} 
+            />
             {isAdmin && (
               <>
                 <Button
@@ -214,10 +228,6 @@ const TimetableView = () => {
                 </Button>
               </>
             )}
-            <Button variant="outline" className="border-border hover:bg-accent/10">
-              <Download className="h-4 w-4 mr-2" />
-              Export
-            </Button>
           </div>
         </motion.div>
 
@@ -308,6 +318,7 @@ const TimetableView = () => {
                 department={selectedDepartment}
                 semester={selectedSemester}
                 viewMode={viewMode}
+                onAddClass={handleAddClassFromGrid}
               />
             </motion.div>
           </TabsContent>
@@ -353,6 +364,15 @@ const TimetableView = () => {
           semester={selectedSemester}
         />
       )}
+
+      {/* Add Class Modal */}
+      <AddClassModal
+        isOpen={showAddClassModal}
+        onClose={() => setShowAddClassModal(false)}
+        department={selectedDepartment}
+        day={addClassContext.day}
+        timeSlot={addClassContext.timeSlot}
+      />
     </div>
   );
 };
