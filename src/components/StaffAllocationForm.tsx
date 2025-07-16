@@ -182,14 +182,14 @@ const StaffAllocationForm = ({ selectedDepartment, onStaffAllocation }: StaffAll
                     <span>Tutor for Classroom</span>
                   </Label>
                   <Select
-                    value={staff.tutorClassroom || ""}
-                    onValueChange={(value) => updateStaffAllocation(staff.id, 'tutorClassroom', value)}
+                    value={staff.tutorClassroom || "none"}
+                    onValueChange={(value) => updateStaffAllocation(staff.id, 'tutorClassroom', value === "none" ? undefined : value)}
                   >
                     <SelectTrigger className="bg-background border-border">
                       <SelectValue placeholder="Select classroom (optional)" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">No tutor assignment</SelectItem>
+                      <SelectItem value="none">No tutor assignment</SelectItem>
                       {classrooms.map((classroom) => (
                         <SelectItem key={classroom} value={classroom}>
                           {classroom}
