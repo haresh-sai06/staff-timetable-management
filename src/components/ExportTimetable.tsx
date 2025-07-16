@@ -4,8 +4,6 @@ import { Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import jsPDF from "jspdf";
-import "jspdf-autotable";
 
 interface ExportTimetableProps {
   department: string;
@@ -21,6 +19,10 @@ const ExportTimetable = ({ department, semester, year }: ExportTimetableProps) =
     setIsExporting(true);
     
     try {
+      // Dynamically import jsPDF to avoid build issues
+      const jsPDF = (await import('jspdf')).default;
+      await import('jspdf-autotable');
+
       // Get current user for attribution
       const { data: { user } } = await supabase.auth.getUser();
       let userName = "Unknown User";
@@ -36,7 +38,11 @@ const ExportTimetable = ({ department, semester, year }: ExportTimetableProps) =
       }
 
       // Create PDF document
-      const pdf = new jsPDF('landscape', 'mm', 'a4');
+      const pdf = new jsPDF({
+        orientation: 'landscape',
+        unit: 'mm',
+        format: 'a4'
+      });
       
       // Header with SKCT branding
       pdf.setFontSize(20);
@@ -66,9 +72,9 @@ const ExportTimetable = ({ department, semester, year }: ExportTimetableProps) =
       const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
       
       // Create table data with realistic content
-      const tableData = days.map((day, dayIndex) => {
+      const tableData = days.map((day) => {
         const rowData = [day];
-        timeSlots.forEach((slot, index) => {
+        timeSlots.forEach(() => {
           // Mock realistic timetable data
           if (Math.random() > 0.2) { // 80% chance of having a class
             const subjects = ["Data Structures", "Database Systems", "Computer Networks", "Software Engineering", "Machine Learning", "Web Development"];

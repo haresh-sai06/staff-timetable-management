@@ -9,6 +9,8 @@ import { useToast } from "@/hooks/use-toast";
 import Navigation from "@/components/Navigation";
 import EditClassroomModal from "@/components/EditClassroomModal";
 import DeleteClassroomModal from "@/components/DeleteClassroomModal";
+import ViewScheduleModal from "@/components/ViewScheduleModal";
+import BookRoomModal from "@/components/BookRoomModal";
 
 interface Classroom {
   id: string;
@@ -27,6 +29,8 @@ const ClassroomManagement = () => {
   const [selectedType, setSelectedType] = useState("all");
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [viewScheduleModalOpen, setViewScheduleModalOpen] = useState(false);
+  const [bookRoomModalOpen, setBookRoomModalOpen] = useState(false);
   const [selectedClassroom, setSelectedClassroom] = useState<Classroom | null>(null);
   const [classrooms, setClassrooms] = useState<Classroom[]>([
     {
@@ -104,19 +108,15 @@ const ClassroomManagement = () => {
   };
 
   const handleViewSchedule = (room: Classroom) => {
-    toast({
-      title: "View Schedule",
-      description: `Opening schedule for ${room.name}`,
-    });
-    console.log("Viewing schedule for room:", room.name);
+    console.log("Opening schedule for room:", room.name);
+    setSelectedClassroom(room);
+    setViewScheduleModalOpen(true);
   };
 
   const handleBookRoom = (room: Classroom) => {
-    toast({
-      title: "Book Room",
-      description: `Opening booking form for ${room.name}`,
-    });
-    console.log("Booking room:", room.name);
+    console.log("Opening booking form for room:", room.name);
+    setSelectedClassroom(room);
+    setBookRoomModalOpen(true);
   };
 
   const handleEditRoom = (room: Classroom) => {
@@ -444,7 +444,7 @@ const ClassroomManagement = () => {
         )}
       </div>
 
-      {/* Edit Modal */}
+      {/* All Modals */}
       <EditClassroomModal
         isOpen={editModalOpen}
         onClose={() => setEditModalOpen(false)}
@@ -452,12 +452,23 @@ const ClassroomManagement = () => {
         onSave={handleSaveClassroom}
       />
 
-      {/* Delete Modal */}
       <DeleteClassroomModal
         isOpen={deleteModalOpen}
         onClose={() => setDeleteModalOpen(false)}
         classroom={selectedClassroom}
         onDelete={handleDeleteClassroom}
+      />
+
+      <ViewScheduleModal
+        isOpen={viewScheduleModalOpen}
+        onClose={() => setViewScheduleModalOpen(false)}
+        classroom={selectedClassroom}
+      />
+
+      <BookRoomModal
+        isOpen={bookRoomModalOpen}
+        onClose={() => setBookRoomModalOpen(false)}
+        classroom={selectedClassroom}
       />
     </div>
   );
