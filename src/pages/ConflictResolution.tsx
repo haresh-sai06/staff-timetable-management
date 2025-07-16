@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { AlertTriangle, Users, MapPin, Clock, CheckCircle, XCircle, Eye } from "lucide-react";
+import { AlertTriangle, Users, MapPin, Clock, CheckCircle, XCircle, Eye, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import Navigation from "@/components/Navigation";
+import CustomSuggestionModal from "@/components/CustomSuggestionModal";
 
 interface ConflictItem {
   id: string;
@@ -19,7 +20,12 @@ interface ConflictItem {
   day: string;
   department: string;
   semester: string;
-  suggestions: string[];
+  suggestions: Array<{
+    text: string;
+    priority: string;
+    isCustom?: boolean;
+    addedBy?: string;
+  }>;
   status: "pending" | "resolved" | "ignored";
   createdAt: string;
 }
@@ -29,6 +35,8 @@ const ConflictResolution = () => {
   const [selectedSeverity, setSelectedSeverity] = useState("all");
   const [selectedType, setSelectedType] = useState("all");
   const [selectedStatus, setSelectedStatus] = useState("pending");
+  const [showCustomSuggestionModal, setShowCustomSuggestionModal] = useState(false);
+  const [selectedConflictForSuggestion, setSelectedConflictForSuggestion] = useState<ConflictItem | null>(null);
 
   const initialConflictData: ConflictItem[] = [
     {
@@ -43,9 +51,9 @@ const ConflictResolution = () => {
       department: "CSE",
       semester: "odd",
       suggestions: [
-        "Reschedule CSE-3B to 10:00-11:00",
-        "Assign different faculty to one of the classes",
-        "Move one class to a different day"
+        { text: "Reschedule CSE-3B to 10:00-11:00", priority: "high" },
+        { text: "Assign different faculty to one of the classes", priority: "medium" },
+        { text: "Move one class to a different day", priority: "low" }
       ],
       status: "pending",
       createdAt: "2024-01-15"
@@ -62,9 +70,9 @@ const ConflictResolution = () => {
       department: "CSE",
       semester: "odd",
       suggestions: [
-        "Move Computer Networks to CSE-102",
-        "Reschedule one class to next available slot",
-        "Use seminar hall if available"
+        { text: "Move Computer Networks to CSE-102", priority: "high" },
+        { text: "Reschedule one class to next available slot", priority: "medium" },
+        { text: "Use seminar hall if available", priority: "low" }
       ],
       status: "pending",
       createdAt: "2024-01-14"
@@ -81,9 +89,9 @@ const ConflictResolution = () => {
       department: "CSE",
       semester: "odd",
       suggestions: [
-        "Redistribute 2 hours to other faculty",
-        "Cancel optional tutorial sessions",
-        "Request workload increase approval"
+        { text: "Redistribute 2 hours to other faculty", priority: "high" },
+        { text: "Cancel optional tutorial sessions", priority: "medium" },
+        { text: "Request workload increase approval", priority: "low" }
       ],
       status: "pending",
       createdAt: "2024-01-13"
@@ -100,9 +108,9 @@ const ConflictResolution = () => {
       department: "CSE",
       semester: "odd",
       suggestions: [
-        "Add 15-minute break between classes",
-        "Move one class to different time slot",
-        "Schedule lunch break"
+        { text: "Add 15-minute break between classes", priority: "medium" },
+        { text: "Move one class to different time slot", priority: "high" },
+        { text: "Schedule lunch break", priority: "low" }
       ],
       status: "resolved",
       createdAt: "2024-01-12"
@@ -172,6 +180,21 @@ const ConflictResolution = () => {
     }
   };
 
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case "urgent":
+        return "bg-red-100 text-red-800 border-red-200";
+      case "high":
+        return "bg-orange-100 text-orange-800 border-orange-200";
+      case "medium":
+        return "bg-yellow-100 text-yellow-800 border-yellow-200";
+      case "low":
+        return "bg-green-100 text-green-800 border-green-200";
+      default:
+        return "bg-gray-100 text-gray-800 border-gray-200";
+    }
+  };
+
   const handleResolveConflict = (conflictId: string, suggestionIndex: number) => {
     console.log(`Resolving conflict ${conflictId} with suggestion ${suggestionIndex}`);
     
@@ -188,7 +211,7 @@ const ConflictResolution = () => {
     
     toast({
       title: "Conflict Resolved",
-      description: `Applied solution: ${suggestion}`,
+      description: `Applied solution: ${suggestion?.text}`,
     });
   };
 
@@ -236,20 +259,45 @@ const ConflictResolution = () => {
     }, 2000);
   };
 
+  const handleAddCustomSuggestion = (conflict: ConflictItem) => {
+    setSelectedConflictForSuggestion(conflict);
+    setShowCustomSuggestionModal(true);
+  };
+
+  const handleSubmitCustomSuggestion = (conflictId: string, suggestion: string, priority: string) => {
+    setConflictData(prevData => 
+      prevData.map(conflict => 
+        conflict.id === conflictId 
+          ? { 
+              ...conflict, 
+              suggestions: [
+                ...conflict.suggestions,
+                { 
+                  text: suggestion, 
+                  priority, 
+                  isCustom: true, 
+                  addedBy: "Current User" 
+                }
+              ]
+            }
+          : conflict
+      )
+    );
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+    <div className="min-h-screen">
       <Navigation />
       
       <div className="container mx-auto px-4 py-8">
-        {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8"
         >
           <div>
-            <h1 className="text-3xl font-bold text-gray-800 mb-2">Conflict Resolution</h1>
-            <p className="text-gray-600">
+            <h1 className="text-3xl font-bold text-foreground mb-2 font-montserrat">Conflict Resolution</h1>
+            <p className="text-muted-foreground">
               Detect and resolve scheduling conflicts automatically
             </p>
           </div>
@@ -261,7 +309,6 @@ const ConflictResolution = () => {
           </div>
         </motion.div>
 
-        {/* Stats Cards */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -273,10 +320,10 @@ const ConflictResolution = () => {
               <div className="flex items-center space-x-2">
                 <AlertTriangle className="h-8 w-8 text-red-600" />
                 <div>
-                  <p className="text-2xl font-bold text-gray-800">
+                  <p className="text-2xl font-bold text-foreground">
                     {conflictData.filter(c => c.status === "pending").length}
                   </p>
-                  <p className="text-gray-600">Pending</p>
+                  <p className="text-muted-foreground">Pending</p>
                 </div>
               </div>
             </CardContent>
@@ -287,10 +334,10 @@ const ConflictResolution = () => {
               <div className="flex items-center space-x-2">
                 <CheckCircle className="h-8 w-8 text-green-600" />
                 <div>
-                  <p className="text-2xl font-bold text-gray-800">
+                  <p className="text-2xl font-bold text-foreground">
                     {conflictData.filter(c => c.status === "resolved").length}
                   </p>
-                  <p className="text-gray-600">Resolved</p>
+                  <p className="text-muted-foreground">Resolved</p>
                 </div>
               </div>
             </CardContent>
@@ -301,10 +348,10 @@ const ConflictResolution = () => {
               <div className="flex items-center space-x-2">
                 <Users className="h-8 w-8 text-blue-600" />
                 <div>
-                  <p className="text-2xl font-bold text-gray-800">
+                  <p className="text-2xl font-bold text-foreground">
                     {conflictData.filter(c => c.type === "staff").length}
                   </p>
-                  <p className="text-gray-600">Staff Conflicts</p>
+                  <p className="text-muted-foreground">Staff Conflicts</p>
                 </div>
               </div>
             </CardContent>
@@ -315,17 +362,16 @@ const ConflictResolution = () => {
               <div className="flex items-center space-x-2">
                 <MapPin className="h-8 w-8 text-green-600" />
                 <div>
-                  <p className="text-2xl font-bold text-gray-800">
+                  <p className="text-2xl font-bold text-foreground">
                     {conflictData.filter(c => c.type === "classroom").length}
                   </p>
-                  <p className="text-gray-600">Room Conflicts</p>
+                  <p className="text-muted-foreground">Room Conflicts</p>
                 </div>
               </div>
             </CardContent>
           </Card>
         </motion.div>
 
-        {/* Filters */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -335,7 +381,7 @@ const ConflictResolution = () => {
           <select
             value={selectedStatus}
             onChange={(e) => setSelectedStatus(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-accent bg-background text-foreground"
           >
             {statusOptions.map((status) => (
               <option key={status} value={status}>
@@ -347,7 +393,7 @@ const ConflictResolution = () => {
           <select
             value={selectedSeverity}
             onChange={(e) => setSelectedSeverity(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-accent bg-background text-foreground"
           >
             {severityLevels.map((severity) => (
               <option key={severity} value={severity}>
@@ -359,7 +405,7 @@ const ConflictResolution = () => {
           <select
             value={selectedType}
             onChange={(e) => setSelectedType(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-accent bg-background text-foreground"
           >
             {conflictTypes.map((type) => (
               <option key={type} value={type}>
@@ -369,7 +415,6 @@ const ConflictResolution = () => {
           </select>
         </motion.div>
 
-        {/* Conflicts List */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -395,12 +440,12 @@ const ConflictResolution = () => {
                   <CardHeader>
                     <div className="flex items-start justify-between">
                       <div className="flex items-center space-x-3">
-                        <div className="bg-indigo-100 p-2 rounded-lg">
-                          <TypeIcon className="h-6 w-6 text-indigo-600" />
+                        <div className="bg-accent/10 p-2 rounded-lg">
+                          <TypeIcon className="h-6 w-6 text-accent" />
                         </div>
                         <div>
                           <CardTitle className="text-xl">{conflict.title}</CardTitle>
-                          <p className="text-gray-600 mt-1">{conflict.description}</p>
+                          <p className="text-muted-foreground mt-1">{conflict.description}</p>
                         </div>
                       </div>
                       <div className="flex items-center space-x-2">
@@ -415,54 +460,77 @@ const ConflictResolution = () => {
                   </CardHeader>
                   
                   <CardContent className="space-y-4">
-                    {/* Conflict Details */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-gray-50 rounded-lg">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-muted/30 rounded-lg">
                       <div>
-                        <p className="text-sm font-medium text-gray-700">Time & Day</p>
-                        <p className="text-sm text-gray-600">{conflict.day}, {conflict.timeSlot}</p>
+                        <p className="text-sm font-medium text-foreground">Time & Day</p>
+                        <p className="text-sm text-muted-foreground">{conflict.day}, {conflict.timeSlot}</p>
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-gray-700">Department</p>
-                        <p className="text-sm text-gray-600">{conflict.department} - {conflict.semester} semester</p>
+                        <p className="text-sm font-medium text-foreground">Department</p>
+                        <p className="text-sm text-muted-foreground">{conflict.department} - {conflict.semester} semester</p>
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-gray-700">Status</p>
+                        <p className="text-sm font-medium text-foreground">Status</p>
                         <div className="flex items-center space-x-1">
                           <StatusIcon className={`h-4 w-4 ${
                             conflict.status === "resolved" ? "text-green-600" :
                             conflict.status === "ignored" ? "text-red-600" :
                             "text-orange-600"
                           }`} />
-                          <span className="text-sm text-gray-600 capitalize">{conflict.status}</span>
+                          <span className="text-sm text-muted-foreground capitalize">{conflict.status}</span>
                         </div>
                       </div>
                     </div>
 
-                    {/* Affected Entities */}
                     <div>
-                      <p className="text-sm font-medium text-gray-700 mb-2">Affected:</p>
+                      <p className="text-sm font-medium text-foreground mb-2">Affected:</p>
                       <div className="flex flex-wrap gap-2">
                         {conflict.affectedEntities.map((entity, idx) => (
-                          <Badge key={idx} variant="outline" className="bg-white">
+                          <Badge key={idx} variant="outline" className="bg-background">
                             {entity}
                           </Badge>
                         ))}
                       </div>
                     </div>
 
-                    {/* Suggestions */}
                     {conflict.status === "pending" && (
                       <div>
-                        <p className="text-sm font-medium text-gray-700 mb-3">Suggested Solutions:</p>
+                        <div className="flex items-center justify-between mb-3">
+                          <p className="text-sm font-medium text-foreground">Suggested Solutions:</p>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleAddCustomSuggestion(conflict)}
+                            className="h-8 text-xs"
+                          >
+                            <Plus className="h-3 w-3 mr-1" />
+                            Add Custom
+                          </Button>
+                        </div>
                         <div className="space-y-2">
                           {conflict.suggestions.map((suggestion, idx) => (
-                            <Alert key={idx} className="border-indigo-200 bg-indigo-50">
+                            <Alert key={idx} className="border-accent/20 bg-accent/5">
                               <AlertDescription className="flex items-center justify-between">
-                                <span className="text-indigo-800">{suggestion}</span>
+                                <div className="flex-1">
+                                  <div className="flex items-center space-x-2 mb-1">
+                                    <span className="text-foreground">{suggestion.text}</span>
+                                    <Badge className={getPriorityColor(suggestion.priority)} variant="outline">
+                                      {suggestion.priority}
+                                    </Badge>
+                                    {suggestion.isCustom && (
+                                      <Badge variant="outline" className="bg-blue-50 dark:bg-blue-900/20 text-blue-800 dark:text-blue-200">
+                                        Custom
+                                      </Badge>
+                                    )}
+                                  </div>
+                                  {suggestion.isCustom && suggestion.addedBy && (
+                                    <p className="text-xs text-muted-foreground">Added by: {suggestion.addedBy}</p>
+                                  )}
+                                </div>
                                 <Button
                                   size="sm"
                                   onClick={() => handleResolveConflict(conflict.id, idx)}
-                                  className="bg-indigo-600 hover:bg-indigo-700 ml-4"
+                                  className="bg-accent hover:bg-accent/90 ml-4"
                                 >
                                   Apply
                                 </Button>
@@ -473,9 +541,8 @@ const ConflictResolution = () => {
                       </div>
                     )}
 
-                    {/* Actions */}
                     {conflict.status === "pending" && (
-                      <div className="flex gap-2 pt-4 border-t">
+                      <div className="flex gap-2 pt-4 border-t border-border">
                         <Button variant="outline" size="sm">
                           View Details
                         </Button>
@@ -504,7 +571,6 @@ const ConflictResolution = () => {
           })}
         </motion.div>
 
-        {/* Empty State */}
         {filteredConflicts.length === 0 && (
           <motion.div
             initial={{ opacity: 0 }}
@@ -512,11 +578,19 @@ const ConflictResolution = () => {
             className="text-center py-12"
           >
             <CheckCircle className="h-16 w-16 text-green-400 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-gray-700 mb-2">No conflicts found</h3>
-            <p className="text-gray-500">All scheduling conflicts have been resolved or no conflicts exist for the selected filters.</p>
+            <h3 className="text-lg font-semibold text-foreground mb-2">No conflicts found</h3>
+            <p className="text-muted-foreground">All scheduling conflicts have been resolved or no conflicts exist for the selected filters.</p>
           </motion.div>
         )}
       </div>
+
+      <CustomSuggestionModal
+        isOpen={showCustomSuggestionModal}
+        onClose={() => setShowCustomSuggestionModal(false)}
+        conflictId={selectedConflictForSuggestion?.id || ""}
+        conflictTitle={selectedConflictForSuggestion?.title || ""}
+        onSubmitSuggestion={handleSubmitCustomSuggestion}
+      />
     </div>
   );
 };

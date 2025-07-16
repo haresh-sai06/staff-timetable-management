@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Calendar, Filter, Plus, Download, Eye, Search, X } from "lucide-react";
@@ -62,7 +61,6 @@ const TimetableView = () => {
 
   const handleStaffSearch = async (query: string) => {
     setIsSearching(true);
-    // Simulate API call - replace with actual API call
     setTimeout(() => {
       const mockResults = {
         staff: {
@@ -118,13 +116,14 @@ const TimetableView = () => {
     setActiveTab("grid");
   };
 
-  const handleAutoGenerate = async (department: string, year: string, semester: string, conditions: any) => {
+  const handleAutoGenerate = async (department: string, year: string, semester: string, conditions: any, staffData?: any[]) => {
     setIsGenerating(true);
     
     console.log("Generating with conditions:", conditions);
+    console.log("Staff allocation data:", staffData);
     
-    // Mock data for demo - in real app, fetch from API
-    const mockStaff = [
+    // Use provided staff data or mock data for demo
+    const mockStaff = staffData && staffData.length > 0 ? staffData : [
       { id: "1", name: "Dr. Priya Sharma", role: "AsstProf" as const, department, maxHours: 18, currentHours: 12 },
       { id: "2", name: "Prof. Rajesh Kumar", role: "Prof" as const, department, maxHours: 12, currentHours: 8 },
     ];
@@ -172,13 +171,10 @@ const TimetableView = () => {
   };
 
   const handleSaveGenerated = () => {
-    // In real app, save to database
     console.log("Saving generated timetable:", generatedTimetable);
-    // Show success toast
   };
 
   const handleEditEntry = (entryId: string, updates: any) => {
-    // In real app, update specific entry
     console.log("Editing entry:", entryId, updates);
   };
 
@@ -231,17 +227,15 @@ const TimetableView = () => {
           </div>
         </motion.div>
 
-        {/* Staff Search Bar */}
         <StaffSearchBar onSearch={handleStaffSearch} onClear={handleClearSearch} />
 
-        {/* Auto Schedule Modal */}
         {showAutoSchedule && (
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
           >
-            <div className="w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+            <div className="w-full max-w-6xl max-h-[90vh] overflow-y-auto">
               <Card className="glassmorphism-strong border-border">
                 <CardHeader className="flex flex-row items-center justify-between">
                   <CardTitle>Automated Timetable Generation</CardTitle>
@@ -267,7 +261,6 @@ const TimetableView = () => {
           </motion.div>
         )}
 
-        {/* Main Content Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="grid" className="flex items-center space-x-2">
@@ -289,7 +282,6 @@ const TimetableView = () => {
           </TabsList>
 
           <TabsContent value="grid" className="space-y-6">
-            {/* Filters */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -308,7 +300,6 @@ const TimetableView = () => {
               />
             </motion.div>
 
-            {/* Timetable Grid */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -356,7 +347,6 @@ const TimetableView = () => {
         </Tabs>
       </div>
 
-      {/* Add Entry Modal - Only show for admins */}
       {isAdmin && showAddEntry && (
         <AddTimetableEntry
           onClose={() => setShowAddEntry(false)}
@@ -365,7 +355,6 @@ const TimetableView = () => {
         />
       )}
 
-      {/* Add Class Modal */}
       <AddClassModal
         isOpen={showAddClassModal}
         onClose={() => setShowAddClassModal(false)}

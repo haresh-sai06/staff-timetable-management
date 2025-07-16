@@ -1,16 +1,17 @@
-
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Calendar, Play, RefreshCw, CheckCircle, AlertTriangle, Settings } from "lucide-react";
+import { Calendar, Play, RefreshCw, CheckCircle, AlertTriangle, Settings, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import StaffAllocationForm from "./StaffAllocationForm";
 
 interface AutoScheduleFormProps {
-  onGenerate: (department: string, year: string, semester: string, conditions: SchedulingConditions) => void;
+  onGenerate: (department: string, year: string, semester: string, conditions: SchedulingConditions, staffData?: any[]) => void;
   isGenerating: boolean;
   generatedTimetable: any;
   conflicts: any[];
@@ -32,8 +33,9 @@ const AutoScheduleForm = ({ onGenerate, isGenerating, generatedTimetable, confli
   const [selectedYear, setSelectedYear] = useState("");
   const [selectedSemester, setSelectedSemester] = useState("");
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [staffData, setStaffData] = useState<any[]>([]);
+  const [activeTab, setActiveTab] = useState("basic");
   
-  // Scheduling conditions state
   const [conditions, setConditions] = useState<SchedulingConditions>({
     prioritizeLabsInAfternoon: true,
     maxConsecutiveHours: 3,
@@ -67,14 +69,19 @@ const AutoScheduleForm = ({ onGenerate, isGenerating, generatedTimetable, confli
 
   const handleGenerate = () => {
     if (selectedDepartment && selectedYear && selectedSemester) {
-      onGenerate(selectedDepartment, selectedYear, selectedSemester, conditions);
+      onGenerate(selectedDepartment, selectedYear, selectedSemester, conditions, staffData);
     }
   };
 
-  const canGenerate = selectedDepartment && selectedYear && selectedSemester && !isGenerating;
+  const canGenerate = selectedDepartment && selectedYear && selectedSemester && !isGenerating && staffData.length > 0;
 
   const updateCondition = (key: keyof SchedulingConditions, value: any) => {
     setConditions(prev => ({ ...prev, [key]: value }));
+  };
+
+  const handleStaffAllocation = (allocatedStaff: any[]) => {
+    setStaffData(allocatedStaff);
+    setActiveTab("conditions");
   };
 
   return (
@@ -90,221 +97,246 @@ const AutoScheduleForm = ({ onGenerate, isGenerating, generatedTimetable, confli
             <span>Automated Timetable Generator</span>
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-6">
-          {/* Basic Selection */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">Department</label>
-              <Select value={selectedDepartment} onValueChange={setSelectedDepartment}>
-                <SelectTrigger className="bg-card/80 border-border">
-                  <SelectValue placeholder="Select Department" />
-                </SelectTrigger>
-                <SelectContent>
-                  {departments.map((dept) => (
-                    <SelectItem key={dept.value} value={dept.value}>
-                      {dept.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+        <CardContent>
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="basic">Basic Setup</TabsTrigger>
+              <TabsTrigger value="staff" disabled={!selectedDepartment}>Staff Allocation</TabsTrigger>
+              <TabsTrigger value="conditions" disabled={staffData.length === 0}>Conditions</TabsTrigger>
+            </TabsList>
 
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">Academic Year</label>
-              <Select value={selectedYear} onValueChange={setSelectedYear}>
-                <SelectTrigger className="bg-card/80 border-border">
-                  <SelectValue placeholder="Select Year" />
-                </SelectTrigger>
-                <SelectContent>
-                  {years.map((year) => (
-                    <SelectItem key={year.value} value={year.value}>
-                      {year.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">Semester</label>
-              <Select value={selectedSemester} onValueChange={setSelectedSemester}>
-                <SelectTrigger className="bg-card/80 border-border">
-                  <SelectValue placeholder="Select Semester" />
-                </SelectTrigger>
-                <SelectContent>
-                  {semesters.map((sem) => (
-                    <SelectItem key={sem.value} value={sem.value}>
-                      {sem.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          {/* Advanced Conditions Toggle */}
-          <div className="flex items-center justify-between border-t border-border pt-4">
-            <div className="flex items-center space-x-2">
-              <Settings className="h-4 w-4 text-muted-foreground" />
-              <Label htmlFor="advanced-conditions" className="text-sm font-medium">
-                Advanced Scheduling Conditions
-              </Label>
-            </div>
-            <Switch
-              id="advanced-conditions"
-              checked={showAdvanced}
-              onCheckedChange={setShowAdvanced}
-            />
-          </div>
-
-          {/* Advanced Conditions Panel */}
-          {showAdvanced && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
-              exit={{ opacity: 0, height: 0 }}
-              className="space-y-4 border border-border rounded-lg p-4 bg-card/20"
-            >
-              <h4 className="font-medium text-foreground mb-3">Scheduling Preferences</h4>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Time Preferences */}
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="prioritize-labs" className="text-sm">Prioritize Labs in Afternoon</Label>
-                    <Switch
-                      id="prioritize-labs"
-                      checked={conditions.prioritizeLabsInAfternoon}
-                      onCheckedChange={(value) => updateCondition('prioritizeLabsInAfternoon', value)}
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="avoid-morning-labs" className="text-sm">Avoid Morning Labs</Label>
-                    <Switch
-                      id="avoid-morning-labs"
-                      checked={conditions.avoidMorningLabs}
-                      onCheckedChange={(value) => updateCondition('avoidMorningLabs', value)}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label className="text-sm">Time Preference</Label>
-                    <Select
-                      value={conditions.timePreference}
-                      onValueChange={(value: "morning" | "afternoon" | "balanced") => updateCondition('timePreference', value)}
-                    >
-                      <SelectTrigger className="bg-card/80 border-border">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="morning">Morning Priority</SelectItem>
-                        <SelectItem value="afternoon">Afternoon Priority</SelectItem>
-                        <SelectItem value="balanced">Balanced</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                {/* Workload & Staff Preferences */}
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="balance-workload" className="text-sm">Balance Staff Workload</Label>
-                    <Switch
-                      id="balance-workload"
-                      checked={conditions.balanceWorkload}
-                      onCheckedChange={(value) => updateCondition('balanceWorkload', value)}
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="prefer-experienced" className="text-sm">Prefer Experienced Staff</Label>
-                    <Switch
-                      id="prefer-experienced"
-                      checked={conditions.preferExperiencedStaff}
-                      onCheckedChange={(value) => updateCondition('preferExperiencedStaff', value)}
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="minimize-room-changes" className="text-sm">Minimize Room Changes</Label>
-                    <Switch
-                      id="minimize-room-changes"
-                      checked={conditions.minimizeRoomChanges}
-                      onCheckedChange={(value) => updateCondition('minimizeRoomChanges', value)}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-border">
+            <TabsContent value="basic" className="space-y-6 mt-6">
+              {/* Basic Selection */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="space-y-2">
-                  <Label className="text-sm">Max Consecutive Hours</Label>
-                  <Select
-                    value={conditions.maxConsecutiveHours.toString()}
-                    onValueChange={(value) => updateCondition('maxConsecutiveHours', parseInt(value))}
-                  >
+                  <label className="text-sm font-medium text-foreground">Department</label>
+                  <Select value={selectedDepartment} onValueChange={setSelectedDepartment}>
                     <SelectTrigger className="bg-card/80 border-border">
-                      <SelectValue />
+                      <SelectValue placeholder="Select Department" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="2">2 Hours</SelectItem>
-                      <SelectItem value="3">3 Hours</SelectItem>
-                      <SelectItem value="4">4 Hours</SelectItem>
-                      <SelectItem value="5">5 Hours</SelectItem>
+                      {departments.map((dept) => (
+                        <SelectItem key={dept.value} value={dept.value}>
+                          {dept.label}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="text-sm">Lab Duration</Label>
-                  <Select
-                    value={conditions.labDuration}
-                    onValueChange={(value: "single" | "double") => updateCondition('labDuration', value)}
-                  >
+                  <label className="text-sm font-medium text-foreground">Academic Year</label>
+                  <Select value={selectedYear} onValueChange={setSelectedYear}>
                     <SelectTrigger className="bg-card/80 border-border">
-                      <SelectValue />
+                      <SelectValue placeholder="Select Year" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="single">Single Period (1 hour)</SelectItem>
-                      <SelectItem value="double">Double Period (2 hours)</SelectItem>
+                      {years.map((year) => (
+                        <SelectItem key={year.value} value={year.value}>
+                          {year.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-foreground">Semester</label>
+                  <Select value={selectedSemester} onValueChange={setSelectedSemester}>
+                    <SelectTrigger className="bg-card/80 border-border">
+                      <SelectValue placeholder="Select Semester" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {semesters.map((sem) => (
+                        <SelectItem key={sem.value} value={sem.value}>
+                          {sem.label}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
               </div>
-            </motion.div>
-          )}
 
-          {/* Generate Button and Info */}
-          <div className="flex items-center justify-between pt-4">
-            <div className="text-sm text-muted-foreground">
-              <p>Generates conflict-free timetables based on:</p>
-              <ul className="list-disc list-inside mt-2 space-y-1">
-                <li>Staff workload limits (Prof: 12h/week, Asst Prof: 18h/week)</li>
-                <li>Classroom availability and preferences</li>
-                <li>Student group scheduling constraints</li>
-                <li>Custom scheduling conditions</li>
-              </ul>
-            </div>
-            
-            <Button
-              onClick={handleGenerate}
-              disabled={!canGenerate}
-              className="bg-accent hover:bg-accent/90 text-accent-foreground min-w-[140px]"
-            >
-              {isGenerating ? (
-                <>
-                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                  Generating...
-                </>
-              ) : (
-                <>
-                  <Play className="h-4 w-4 mr-2" />
-                  Generate
-                </>
+              {selectedDepartment && (
+                <div className="flex justify-center pt-4">
+                  <Button 
+                    onClick={() => setActiveTab("staff")}
+                    className="bg-accent hover:bg-accent/90 text-accent-foreground"
+                  >
+                    <Users className="h-4 w-4 mr-2" />
+                    Configure Staff Allocation
+                  </Button>
+                </div>
               )}
-            </Button>
-          </div>
+            </TabsContent>
+
+            <TabsContent value="staff" className="mt-6">
+              <StaffAllocationForm 
+                selectedDepartment={selectedDepartment}
+                onStaffAllocation={handleStaffAllocation}
+              />
+            </TabsContent>
+
+            <TabsContent value="conditions" className="space-y-6 mt-6">
+              {/* Advanced Conditions Toggle */}
+              <div className="flex items-center justify-between border-t border-border pt-4">
+                <div className="flex items-center space-x-2">
+                  <Settings className="h-4 w-4 text-muted-foreground" />
+                  <Label htmlFor="advanced-conditions" className="text-sm font-medium">
+                    Advanced Scheduling Conditions
+                  </Label>
+                </div>
+                <Switch
+                  id="advanced-conditions"
+                  checked={showAdvanced}
+                  onCheckedChange={setShowAdvanced}
+                />
+              </div>
+
+              {showAdvanced && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="space-y-4 border border-border rounded-lg p-4 bg-card/20"
+                >
+                  <h4 className="font-medium text-foreground mb-3">Scheduling Preferences</h4>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Time Preferences */}
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <Label htmlFor="prioritize-labs" className="text-sm">Prioritize Labs in Afternoon</Label>
+                        <Switch
+                          id="prioritize-labs"
+                          checked={conditions.prioritizeLabsInAfternoon}
+                          onCheckedChange={(value) => updateCondition('prioritizeLabsInAfternoon', value)}
+                        />
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <Label htmlFor="avoid-morning-labs" className="text-sm">Avoid Morning Labs</Label>
+                        <Switch
+                          id="avoid-morning-labs"
+                          checked={conditions.avoidMorningLabs}
+                          onCheckedChange={(value) => updateCondition('avoidMorningLabs', value)}
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label className="text-sm">Time Preference</Label>
+                        <Select
+                          value={conditions.timePreference}
+                          onValueChange={(value: "morning" | "afternoon" | "balanced") => updateCondition('timePreference', value)}
+                        >
+                          <SelectTrigger className="bg-card/80 border-border">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="morning">Morning Priority</SelectItem>
+                            <SelectItem value="afternoon">Afternoon Priority</SelectItem>
+                            <SelectItem value="balanced">Balanced</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+
+                    {/* Workload & Staff Preferences */}
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <Label htmlFor="balance-workload" className="text-sm">Balance Staff Workload</Label>
+                        <Switch
+                          id="balance-workload"
+                          checked={conditions.balanceWorkload}
+                          onCheckedChange={(value) => updateCondition('balanceWorkload', value)}
+                        />
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <Label htmlFor="prefer-experienced" className="text-sm">Prefer Experienced Staff</Label>
+                        <Switch
+                          id="prefer-experienced"
+                          checked={conditions.preferExperiencedStaff}
+                          onCheckedChange={(value) => updateCondition('preferExperiencedStaff', value)}
+                        />
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <Label htmlFor="minimize-room-changes" className="text-sm">Minimize Room Changes</Label>
+                        <Switch
+                          id="minimize-room-changes"
+                          checked={conditions.minimizeRoomChanges}
+                          onCheckedChange={(value) => updateCondition('minimizeRoomChanges', value)}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-border">
+                    <div className="space-y-2">
+                      <Label className="text-sm">Max Consecutive Hours</Label>
+                      <Select
+                        value={conditions.maxConsecutiveHours.toString()}
+                        onValueChange={(value) => updateCondition('maxConsecutiveHours', parseInt(value))}
+                      >
+                        <SelectTrigger className="bg-card/80 border-border">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="2">2 Hours</SelectItem>
+                          <SelectItem value="3">3 Hours</SelectItem>
+                          <SelectItem value="4">4 Hours</SelectItem>
+                          <SelectItem value="5">5 Hours</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label className="text-sm">Lab Duration</Label>
+                      <Select
+                        value={conditions.labDuration}
+                        onValueChange={(value: "single" | "double") => updateCondition('labDuration', value)}
+                      >
+                        <SelectTrigger className="bg-card/80 border-border">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="single">Single Period (1 hour)</SelectItem>
+                          <SelectItem value="double">Double Period (2 hours)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+
+              {/* Generate Button and Info */}
+              <div className="flex items-center justify-between pt-4">
+                <div className="text-sm text-muted-foreground">
+                  <p>Staff allocated: <Badge variant="outline">{staffData.length} members</Badge></p>
+                  <p className="mt-1">Ready to generate optimized timetable</p>
+                </div>
+                
+                <Button
+                  onClick={handleGenerate}
+                  disabled={!canGenerate}
+                  className="bg-accent hover:bg-accent/90 text-accent-foreground min-w-[140px]"
+                >
+                  {isGenerating ? (
+                    <>
+                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                      Generating...
+                    </>
+                  ) : (
+                    <>
+                      <Play className="h-4 w-4 mr-2" />
+                      Generate
+                    </>
+                  )}
+                </Button>
+              </div>
+            </TabsContent>
+          </Tabs>
 
           {conflicts && conflicts.length > 0 && (
             <motion.div
