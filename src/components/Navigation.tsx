@@ -7,12 +7,14 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import ThemeToggle from "@/components/ThemeToggle";
 import type { User, Session } from "@supabase/supabase-js";
 
 const Navigation = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
+  const [userProfile, setUserProfile] = useState<any>(null);
   const [userRole, setUserRole] = useState<string>("");
   const navigate = useNavigate();
   const location = useLocation();
@@ -22,23 +24,14 @@ const Navigation = () => {
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log("Auth state changed:", event, session?.user?.email);
         setSession(session);
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          // Fetch user profile to get role
-          setTimeout(async () => {
-            const { data: profile } = await supabase
-              .from('profiles')
-              .select('role')
-              .eq('id', session.user.id)
-              .single();
-            
-            if (profile) {
-              setUserRole(profile.role);
-            }
-          }, 0);
+          await fetchUserProfile(session.user.id);
         } else {
+          setUserProfile(null);
           setUserRole("");
         }
       }
@@ -48,10 +41,40 @@ const Navigation = () => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
+      if (session?.user) {
+        fetchUserProfile(session.user.id);
+      }
     });
 
     return () => subscription.unsubscribe();
   }, []);
+
+  const fetchUserProfile = async (userId: string) => {
+    try {
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+      if (error) {
+        console.error("Error fetching profile:", error);
+        return;
+      }
+
+      if (profile) {
+        console.log("Fetched profile:", profile);
+        setUserProfile(profile);
+        setUserRole(profile.role || 'user');
+        
+        // Also update localStorage for immediate access
+        localStorage.setItem("userName", profile.full_name || profile.email?.split("@")[0] || "User");
+        localStorage.setItem("userRole", profile.role || 'user');
+      }
+    } catch (error) {
+      console.error("Error in fetchUserProfile:", error);
+    }
+  };
 
   const navItems = [
     { icon: Home, label: "Home", path: "/" },
@@ -67,6 +90,8 @@ const Navigation = () => {
   const handleLogout = async () => {
     try {
       await supabase.auth.signOut();
+      localStorage.removeItem("userName");
+      localStorage.removeItem("userRole");
       toast({
         title: "Logged out",
         description: "You have been successfully logged out",
@@ -91,7 +116,8 @@ const Navigation = () => {
     setIsOpen(false);
   };
 
-  const userName = user?.email?.split("@")[0] || "User";
+  const userName = userProfile?.full_name || user?.email?.split("@")[0] || "User";
+  const userEmail = userProfile?.email || user?.email || "";
 
   return (
     <nav className="bg-card/95 backdrop-blur-md shadow-lg sticky top-0 z-50 border-b border-border">
@@ -142,6 +168,9 @@ const Navigation = () => {
               </motion.div>
             ))}
 
+            {/* Theme Toggle */}
+            <ThemeToggle />
+
             {/* Profile/Login Section */}
             <div className="ml-4 flex items-center space-x-2">
               {user ? (
@@ -152,12 +181,20 @@ const Navigation = () => {
                     className="flex items-center space-x-2 hover:bg-accent/10 text-accent hover:text-accent/80"
                   >
                     <Avatar className="h-6 w-6">
-                      <AvatarImage src="" alt={userName} />
+                      <AvatarImage 
+                        src={userProfile?.profile_picture || ""} 
+                        alt={userName} 
+                      />
                       <AvatarFallback className="bg-accent text-accent-foreground text-xs">
                         {userName.charAt(0).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
-                    <span className="text-sm">{userName}</span>
+                    <div className="flex flex-col items-start">
+                      <span className="text-sm font-medium">{userName}</span>
+                      {userEmail && (
+                        <span className="text-xs text-muted-foreground">{userEmail}</span>
+                      )}
+                    </div>
                     {userRole === 'admin' && (
                       <span className="text-xs bg-red-100 text-red-800 px-2 py-1 rounded">Admin</span>
                     )}
@@ -184,7 +221,8 @@ const Navigation = () => {
           </div>
 
           {/* Mobile Menu Button */}
-          <div className="md:hidden">
+          <div className="md:hidden flex items-center space-x-2">
+            <ThemeToggle />
             <Button
               variant="ghost"
               size="sm"
@@ -231,11 +269,21 @@ const Navigation = () => {
                     onClick={handleProfileClick}
                     className="w-full justify-start space-x-2 text-accent hover:text-accent/80"
                   >
-                    <UserIcon className="h-4 w-4" />
-                    <span>Profile ({userName})</span>
-                    {userRole === 'admin' && (
-                      <span className="text-xs bg-red-100 text-red-800 px-2 py-1 rounded">Admin</span>
-                    )}
+                    <Avatar className="h-6 w-6">
+                      <AvatarImage 
+                        src={userProfile?.profile_picture || ""} 
+                        alt={userName} 
+                      />
+                      <AvatarFallback className="bg-accent text-accent-foreground text-xs">
+                        {userName.charAt(0).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex flex-col items-start">
+                      <span className="text-sm">{userName}</span>
+                      {userRole === 'admin' && (
+                        <span className="text-xs bg-red-100 text-red-800 px-2 py-1 rounded">Admin</span>
+                      )}
+                    </div>
                   </Button>
                   <Button
                     variant="ghost"

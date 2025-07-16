@@ -28,31 +28,33 @@ const ExportTimetable = ({ department, semester, year }: ExportTimetableProps) =
       if (user) {
         const { data: profile } = await supabase
           .from('profiles')
-          .select('full_name')
+          .select('full_name, email')
           .eq('id', user.id)
-          .single();
+          .maybeSingle();
         
         userName = profile?.full_name || user.email?.split("@")[0] || "User";
       }
 
       // Create PDF document
-      const pdf = new jsPDF();
+      const pdf = new jsPDF('landscape', 'mm', 'a4');
       
       // Header with SKCT branding
       pdf.setFontSize(20);
       pdf.setFont("helvetica", "bold");
-      pdf.text("Sri Krishna College of Technology", 105, 25, { align: "center" });
+      pdf.text("Sri Krishna College of Technology", pdf.internal.pageSize.width / 2, 25, { align: "center" });
       
       pdf.setFontSize(12);
       pdf.setFont("helvetica", "normal");
-      pdf.text("Autonomous | Affiliated to Anna University | NIRF Rank 83 (2024)", 105, 35, { align: "center" });
+      pdf.text("Autonomous | Affiliated to Anna University | NIRF Rank 83 (2024)", pdf.internal.pageSize.width / 2, 35, { align: "center" });
       
       pdf.setFontSize(16);
       pdf.setFont("helvetica", "bold");
-      pdf.text(`${department} Department - ${semester.charAt(0).toUpperCase() + semester.slice(1)} Semester Timetable`, 105, 50, { align: "center" });
+      const title = `${department} Department - ${semester.charAt(0).toUpperCase() + semester.slice(1)} Semester Timetable`;
+      pdf.text(title, pdf.internal.pageSize.width / 2, 50, { align: "center" });
       
       if (year) {
-        pdf.text(`Year: ${year}`, 105, 60, { align: "center" });
+        pdf.setFontSize(14);
+        pdf.text(`Academic Year: ${year}`, pdf.internal.pageSize.width / 2, 60, { align: "center" });
       }
 
       // Mock timetable data - replace with actual data from your API
@@ -63,22 +65,31 @@ const ExportTimetable = ({ department, semester, year }: ExportTimetableProps) =
       
       const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
       
-      // Create table data
-      const tableData = days.map(day => {
+      // Create table data with realistic content
+      const tableData = days.map((day, dayIndex) => {
         const rowData = [day];
-        timeSlots.forEach((_, index) => {
-          // Mock data - replace with actual timetable data
-          if (Math.random() > 0.3) {
-            rowData.push(`Subject ${index + 1}\nStaff Name\nRoom ${index + 1}`);
+        timeSlots.forEach((slot, index) => {
+          // Mock realistic timetable data
+          if (Math.random() > 0.2) { // 80% chance of having a class
+            const subjects = ["Data Structures", "Database Systems", "Computer Networks", "Software Engineering", "Machine Learning", "Web Development"];
+            const staff = ["Dr. Priya Sharma", "Prof. Rajesh Kumar", "Dr. Anjali Verma", "Prof. Suresh Nair"];
+            const rooms = ["CSE-101", "CSE-102", "CSE-Lab1", "CSE-Lab2"];
+            
+            const subject = subjects[Math.floor(Math.random() * subjects.length)];
+            const staffMember = staff[Math.floor(Math.random() * staff.length)];
+            const room = rooms[Math.floor(Math.random() * rooms.length)];
+            
+            rowData.push(`${subject}\n${staffMember}\n${room}`);
           } else {
-            rowData.push("");
+            rowData.push(""); // Empty slot
           }
         });
         return rowData;
       });
 
-      // Add table
-      (pdf as any).autoTable({
+      // Add table with proper type assertion for jsPDF
+      const doc = pdf as any;
+      doc.autoTable({
         head: [["Day", ...timeSlots]],
         body: tableData,
         startY: year ? 75 : 65,
@@ -86,27 +97,44 @@ const ExportTimetable = ({ department, semester, year }: ExportTimetableProps) =
           fontSize: 8,
           cellPadding: 3,
           halign: 'center',
-          valign: 'middle'
+          valign: 'middle',
+          lineWidth: 0.1,
+          lineColor: [200, 200, 200]
         },
         headStyles: {
           fillColor: [30, 58, 138], // Dark blue
           textColor: [255, 215, 0], // Gold
-          fontStyle: 'bold'
+          fontStyle: 'bold',
+          fontSize: 9
         },
         columnStyles: {
-          0: { fillColor: [30, 58, 138], textColor: [255, 215, 0], fontStyle: 'bold' }
+          0: { 
+            fillColor: [30, 58, 138], 
+            textColor: [255, 215, 0], 
+            fontStyle: 'bold',
+            cellWidth: 25
+          }
         },
         alternateRowStyles: {
           fillColor: [240, 242, 247]
-        }
+        },
+        tableLineColor: [200, 200, 200],
+        tableLineWidth: 0.1,
+        margin: { left: 10, right: 10 }
       });
 
       // Footer with user attribution
       const pageHeight = pdf.internal.pageSize.height;
+      const pageWidth = pdf.internal.pageSize.width;
+      
       pdf.setFontSize(10);
       pdf.setFont("helvetica", "normal");
       pdf.text(`Downloaded by: ${userName}`, 20, pageHeight - 20);
       pdf.text(`Generated on: ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}`, 20, pageHeight - 10);
+      
+      // Add SKCT logo placeholder (you can replace this with actual logo)
+      pdf.setFontSize(8);
+      pdf.text("SKCT Timetable Management System", pageWidth - 80, pageHeight - 10);
 
       // Save the PDF
       const fileName = `${department}_${semester}_timetable_${new Date().toISOString().split('T')[0]}.pdf`;

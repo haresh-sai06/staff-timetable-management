@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { MapPin, Plus, Search, Edit, Trash2, Users, Monitor, Beaker, Calendar, BookOpen } from "lucide-react";
@@ -8,6 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import Navigation from "@/components/Navigation";
+import EditClassroomModal from "@/components/EditClassroomModal";
+import DeleteClassroomModal from "@/components/DeleteClassroomModal";
 
 interface Classroom {
   id: string;
@@ -24,9 +25,10 @@ interface Classroom {
 const ClassroomManagement = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedType, setSelectedType] = useState("all");
-  const { toast } = useToast();
-
-  const classroomData: Classroom[] = [
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [selectedClassroom, setSelectedClassroom] = useState<Classroom | null>(null);
+  const [classrooms, setClassrooms] = useState<Classroom[]>([
     {
       id: "1",
       name: "CSE-101",
@@ -81,11 +83,12 @@ const ClassroomManagement = () => {
       currentBookings: 8,
       maxBookings: 15
     }
-  ];
+  ]);
+  const { toast } = useToast();
 
   const roomTypes = ["all", "Lecture Hall", "Computer Lab", "Workshop", "Seminar Room"];
 
-  const filteredClassrooms = classroomData.filter(room => {
+  const filteredClassrooms = classrooms.filter(room => {
     const matchesSearch = room.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          (room.department && room.department.toLowerCase().includes(searchTerm.toLowerCase()));
     const matchesType = selectedType === "all" || room.type === selectedType;
@@ -117,20 +120,27 @@ const ClassroomManagement = () => {
   };
 
   const handleEditRoom = (room: Classroom) => {
-    toast({
-      title: "Edit Room",
-      description: `Opening edit form for ${room.name}`,
-    });
-    console.log("Editing room:", room.name);
+    console.log("Opening edit form for room:", room.name);
+    setSelectedClassroom(room);
+    setEditModalOpen(true);
   };
 
   const handleDeleteRoom = (room: Classroom) => {
-    toast({
-      title: "Delete Room",
-      description: `Are you sure you want to delete ${room.name}?`,
-      variant: "destructive",
-    });
-    console.log("Deleting room:", room.name);
+    console.log("Opening delete confirmation for room:", room.name);
+    setSelectedClassroom(room);
+    setDeleteModalOpen(true);
+  };
+
+  const handleSaveClassroom = (updatedClassroom: Classroom) => {
+    setClassrooms(prev => 
+      prev.map(room => 
+        room.id === updatedClassroom.id ? updatedClassroom : room
+      )
+    );
+  };
+
+  const handleDeleteClassroom = (classroomId: string) => {
+    setClassrooms(prev => prev.filter(room => room.id !== classroomId));
   };
 
   const getTypeIcon = (type: string) => {
@@ -174,7 +184,7 @@ const ClassroomManagement = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+    <div className="min-h-screen skct-gradient">
       <Navigation />
       
       <div className="container mx-auto px-4 py-8">
@@ -185,14 +195,14 @@ const ClassroomManagement = () => {
           className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8"
         >
           <div>
-            <h1 className="text-3xl font-bold text-gray-800 mb-2">Classroom Management</h1>
-            <p className="text-gray-600">
+            <h1 className="text-3xl font-bold text-foreground mb-2 font-montserrat">Classroom Management</h1>
+            <p className="text-foreground">
               Organize classrooms, prevent double-booking, and optimize space allocation
             </p>
           </div>
           <div className="flex gap-2 mt-4 md:mt-0">
             <Button 
-              className="bg-indigo-600 hover:bg-indigo-700"
+              className="bg-accent hover:bg-accent/90 text-accent-foreground"
               onClick={handleAddClassroom}
             >
               <Plus className="h-4 w-4 mr-2" />
@@ -213,10 +223,10 @@ const ClassroomManagement = () => {
               <div className="flex items-center space-x-2">
                 <MapPin className="h-8 w-8 text-blue-600" />
                 <div>
-                  <p className="text-2xl font-bold text-gray-800">
-                    {classroomData.filter(r => r.isActive).length}
+                  <p className="text-2xl font-bold text-foreground">
+                    {classrooms.filter(r => r.isActive).length}
                   </p>
-                  <p className="text-gray-600">Total Rooms</p>
+                  <p className="text-muted-foreground">Total Rooms</p>
                 </div>
               </div>
             </CardContent>
@@ -227,10 +237,10 @@ const ClassroomManagement = () => {
               <div className="flex items-center space-x-2">
                 <Monitor className="h-8 w-8 text-green-600" />
                 <div>
-                  <p className="text-2xl font-bold text-gray-800">
-                    {classroomData.filter(r => r.type === "Computer Lab").length}
+                  <p className="text-2xl font-bold text-foreground">
+                    {classrooms.filter(r => r.type === "Computer Lab").length}
                   </p>
-                  <p className="text-gray-600">Computer Labs</p>
+                  <p className="text-muted-foreground">Computer Labs</p>
                 </div>
               </div>
             </CardContent>
@@ -241,10 +251,10 @@ const ClassroomManagement = () => {
               <div className="flex items-center space-x-2">
                 <Users className="h-8 w-8 text-purple-600" />
                 <div>
-                  <p className="text-2xl font-bold text-gray-800">
-                    {classroomData.reduce((sum, room) => sum + room.capacity, 0)}
+                  <p className="text-2xl font-bold text-foreground">
+                    {classrooms.reduce((sum, room) => sum + room.capacity, 0)}
                   </p>
-                  <p className="text-gray-600">Total Capacity</p>
+                  <p className="text-muted-foreground">Total Capacity</p>
                 </div>
               </div>
             </CardContent>
@@ -255,10 +265,10 @@ const ClassroomManagement = () => {
               <div className="flex items-center space-x-2">
                 <Beaker className="h-8 w-8 text-orange-600" />
                 <div>
-                  <p className="text-2xl font-bold text-gray-800">
-                    {classroomData.filter(r => r.currentBookings >= r.maxBookings * 0.9).length}
+                  <p className="text-2xl font-bold text-foreground">
+                    {classrooms.filter(r => r.currentBookings >= r.maxBookings * 0.9).length}
                   </p>
-                  <p className="text-gray-600">High Utilization</p>
+                  <p className="text-muted-foreground">High Utilization</p>
                 </div>
               </div>
             </CardContent>
@@ -273,7 +283,7 @@ const ClassroomManagement = () => {
           className="flex flex-col md:flex-row gap-4 mb-6"
         >
           <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Search classrooms by name or department..."
               value={searchTerm}
@@ -284,7 +294,7 @@ const ClassroomManagement = () => {
           <select
             value={selectedType}
             onChange={(e) => setSelectedType(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="px-3 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-accent"
           >
             {roomTypes.map((type) => (
               <option key={type} value={type}>
@@ -315,12 +325,12 @@ const ClassroomManagement = () => {
                   <CardHeader className="pb-4">
                     <div className="flex items-start justify-between">
                       <div className="flex items-center space-x-3">
-                        <div className="bg-indigo-100 p-2 rounded-lg">
-                          <IconComponent className="h-6 w-6 text-indigo-600" />
+                        <div className="bg-accent/10 p-2 rounded-lg">
+                          <IconComponent className="h-6 w-6 text-accent" />
                         </div>
                         <div>
                           <CardTitle className="text-lg">{room.name}</CardTitle>
-                          <p className="text-sm text-gray-600">
+                          <p className="text-sm text-muted-foreground">
                             Capacity: {room.capacity} students
                           </p>
                         </div>
@@ -336,7 +346,7 @@ const ClassroomManagement = () => {
                         <Button 
                           variant="ghost" 
                           size="sm" 
-                          className="text-red-600 hover:text-red-700"
+                          className="text-destructive hover:text-destructive/80"
                           onClick={() => handleDeleteRoom(room)}
                         >
                           <Trash2 className="h-4 w-4" />
@@ -352,7 +362,7 @@ const ClassroomManagement = () => {
                         {room.type}
                       </Badge>
                       {room.department && (
-                        <Badge variant="outline" className="bg-gray-100">
+                        <Badge variant="outline" className="bg-muted">
                           {room.department}
                         </Badge>
                       )}
@@ -382,7 +392,7 @@ const ClassroomManagement = () => {
 
                     {/* Equipment */}
                     <div>
-                      <p className="text-sm font-medium text-gray-700 mb-2">Equipment:</p>
+                      <p className="text-sm font-medium text-foreground mb-2">Equipment:</p>
                       <div className="flex flex-wrap gap-1">
                         {room.equipment.map((equipment, idx) => (
                           <Badge key={idx} variant="secondary" className="text-xs">
@@ -427,12 +437,28 @@ const ClassroomManagement = () => {
             animate={{ opacity: 1 }}
             className="text-center py-12"
           >
-            <MapPin className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-gray-700 mb-2">No classrooms found</h3>
-            <p className="text-gray-500">Try adjusting your search criteria or add new classrooms.</p>
+            <MapPin className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-foreground mb-2">No classrooms found</h3>
+            <p className="text-muted-foreground">Try adjusting your search criteria or add new classrooms.</p>
           </motion.div>
         )}
       </div>
+
+      {/* Edit Modal */}
+      <EditClassroomModal
+        isOpen={editModalOpen}
+        onClose={() => setEditModalOpen(false)}
+        classroom={selectedClassroom}
+        onSave={handleSaveClassroom}
+      />
+
+      {/* Delete Modal */}
+      <DeleteClassroomModal
+        isOpen={deleteModalOpen}
+        onClose={() => setDeleteModalOpen(false)}
+        classroom={selectedClassroom}
+        onDelete={handleDeleteClassroom}
+      />
     </div>
   );
 };
