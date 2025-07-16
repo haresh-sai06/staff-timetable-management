@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Clock, User, MapPin, BookOpen, AlertCircle, Plus } from "lucide-react";
@@ -27,9 +26,10 @@ interface TimetableGridProps {
   department: string;
   semester: string;
   viewMode: string;
+  onAddClass?: (day: string, timeSlot: string) => void;
 }
 
-const TimetableGrid = ({ department, semester, viewMode }: TimetableGridProps) => {
+const TimetableGrid = ({ department, semester, viewMode, onAddClass }: TimetableGridProps) => {
   const { toast } = useToast();
   const [timetableData, setTimetableData] = useState<TimetableEntry[]>([]);
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
@@ -112,13 +112,16 @@ const TimetableGrid = ({ department, semester, viewMode }: TimetableGridProps) =
   };
 
   const handleAddClass = (day: string, timeSlot: string) => {
-    toast({
-      title: "Add Class",
-      description: `Opening form to add class on ${day} at ${timeSlot}`,
-    });
-    
-    // In a real app, this would open a modal or navigate to add class form
-    console.log(`Adding class for ${day} at ${timeSlot}`);
+    if (onAddClass) {
+      onAddClass(day, timeSlot);
+    } else {
+      toast({
+        title: "Add Class",
+        description: `Opening form to add class on ${day} at ${timeSlot}`,
+      });
+      
+      console.log(`Adding class for ${day} at ${timeSlot}`);
+    }
   };
 
   const handleClassClick = (entry: TimetableEntry) => {
