@@ -4,32 +4,27 @@ import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
 
 const ThemeToggle = () => {
-  const [isDark, setIsDark] = useState(true);
+  const [isDark, setIsDark] = useState(() => {
+    // Initialize from localStorage or system preference
+    const saved = localStorage.getItem("theme");
+    if (saved) return saved === "dark";
+    return window.matchMedia("(prefers-color-scheme: dark)").matches;
+  });
 
   useEffect(() => {
-    // Initialize theme from localStorage or default to dark
-    const savedTheme = localStorage.getItem("theme");
-    const prefersDark = savedTheme === "dark" || (!savedTheme && true);
-    setIsDark(prefersDark);
-    
-    if (prefersDark) {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
-  }, []);
-
-  const toggleTheme = () => {
-    const newIsDark = !isDark;
-    setIsDark(newIsDark);
-    
-    if (newIsDark) {
-      document.documentElement.classList.add("dark");
+    // Apply theme on mount and when changed
+    const root = document.documentElement;
+    if (isDark) {
+      root.classList.add("dark");
       localStorage.setItem("theme", "dark");
     } else {
-      document.documentElement.classList.remove("dark");
+      root.classList.remove("dark");
       localStorage.setItem("theme", "light");
     }
+  }, [isDark]);
+
+  const toggleTheme = () => {
+    setIsDark(!isDark);
   };
 
   return (
@@ -37,7 +32,8 @@ const ThemeToggle = () => {
       variant="outline"
       size="sm"
       onClick={toggleTheme}
-      className="border-border hover:bg-accent/10"
+      className="border-border hover:bg-accent/10 transition-colors"
+      aria-label={`Switch to ${isDark ? 'light' : 'dark'} theme`}
     >
       {isDark ? (
         <Sun className="h-4 w-4" />

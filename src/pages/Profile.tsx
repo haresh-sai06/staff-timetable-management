@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { useProfileImage } from "@/hooks/useProfileImage";
 import Navigation from "@/components/Navigation";
 
 const Profile = () => {
@@ -16,12 +17,12 @@ const Profile = () => {
     name: "",
     email: "",
     role: "user",
-    profilePicture: "",
   });
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+  const { profileImage, isUploading, uploadProfileImage, loadProfileImage } = useProfileImage();
 
   useEffect(() => {
     loadUserProfile();
@@ -43,15 +44,12 @@ const Profile = () => {
             name: profile.full_name || user.email?.split("@")[0] || "User",
             email: profile.email || user.email || "",
             role: profile.role || "user",
-            profilePicture: "", // Will be implemented with storage
           });
         } else {
-          // Fallback to user data
           setProfileData({
             name: user.email?.split("@")[0] || "User",
             email: user.email || "",
             role: "user",
-            profilePicture: "",
           });
         }
       }
@@ -67,26 +65,19 @@ const Profile = () => {
     }
   };
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (file.size > 1024 * 1024) { // 1MB limit
+      if (file.size > 2 * 1024 * 1024) { // 2MB limit
         toast({
           title: "File too large",
-          description: "Please select an image smaller than 1MB",
+          description: "Please select an image smaller than 2MB",
           variant: "destructive",
         });
         return;
       }
 
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        setProfileData(prev => ({
-          ...prev,
-          profilePicture: event.target?.result as string
-        }));
-      };
-      reader.readAsDataURL(file);
+      await uploadProfileImage(file);
     }
   };
 
@@ -113,7 +104,6 @@ const Profile = () => {
           throw error;
         }
 
-        // Update localStorage for immediate UI updates
         localStorage.setItem("userName", profileData.name);
         
         toast({
@@ -121,6 +111,11 @@ const Profile = () => {
           description: "Your profile has been successfully updated",
         });
         setIsEditing(false);
+        
+        // Trigger a page reload to update navigation
+        setTimeout(() => {
+          window.location.reload();
+        }, 1000);
       }
     } catch (error) {
       console.error("Error updating profile:", error);
@@ -151,7 +146,7 @@ const Profile = () => {
 
   if (isLoadingProfile) {
     return (
-      <div className="min-h-screen skct-gradient">
+      <div className="min-h-screen bg-background">
         <Navigation />
         <div className="container mx-auto px-4 py-8 flex items-center justify-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent"></div>
@@ -161,7 +156,7 @@ const Profile = () => {
   }
 
   return (
-    <div className="min-h-screen skct-gradient">
+    <div className="min-h-screen bg-background">
       <Navigation />
       
       <div className="container mx-auto px-4 py-8">
@@ -218,7 +213,6 @@ const Profile = () => {
             </div>
 
             <div className="space-y-6">
-              {/* Profile Picture */}
               <motion.div
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
@@ -227,7 +221,7 @@ const Profile = () => {
               >
                 <div className="relative">
                   <Avatar className="h-24 w-24 border-2 border-accent">
-                    <AvatarImage src={profileData.profilePicture} alt={profileData.name} />
+                    <AvatarImage src={profileImage} alt={profileData.name} />
                     <AvatarFallback className="bg-primary text-primary-foreground text-xl font-bold">
                       {profileData.name.charAt(0).toUpperCase()}
                     </AvatarFallback>
@@ -238,9 +232,14 @@ const Profile = () => {
                       whileHover={{ scale: 1.1 }}
                       whileTap={{ scale: 0.9 }}
                       onClick={() => fileInputRef.current?.click()}
-                      className="absolute bottom-0 right-0 bg-accent hover:bg-accent/90 text-accent-foreground rounded-full p-2 shadow-lg transition-colors"
+                      disabled={isUploading}
+                      className="absolute bottom-0 right-0 bg-accent hover:bg-accent/90 text-accent-foreground rounded-full p-2 shadow-lg transition-colors disabled:opacity-50"
                     >
-                      <Camera className="h-4 w-4" />
+                      {isUploading ? (
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-accent-foreground"></div>
+                      ) : (
+                        <Camera className="h-4 w-4" />
+                      )}
                     </motion.button>
                   )}
                 </div>
@@ -253,7 +252,6 @@ const Profile = () => {
                   className="hidden"
                 />
 
-                {/* Role Badge */}
                 <div className={`inline-flex items-center space-x-2 px-3 py-1 rounded-full text-sm font-medium ${getRoleColor(profileData.role)}`}>
                   {(() => {
                     const RoleIcon = getRoleIcon(profileData.role);
@@ -263,7 +261,6 @@ const Profile = () => {
                 </div>
               </motion.div>
 
-              {/* Profile Information */}
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
