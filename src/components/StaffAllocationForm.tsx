@@ -1,12 +1,11 @@
 
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Users, Clock, BookOpen, GraduationCap, Building, Save } from "lucide-react";
+import { Users, Clock, BookOpen, GraduationCap, Save } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 
 interface StaffMember {
@@ -23,7 +22,6 @@ interface StaffMember {
     placement: number;
     departmental: number;
   };
-  tutorClassroom?: string;
 }
 
 interface StaffAllocationFormProps {
@@ -33,12 +31,10 @@ interface StaffAllocationFormProps {
 
 const StaffAllocationForm = ({ selectedDepartment, onStaffAllocation }: StaffAllocationFormProps) => {
   const [staffList, setStaffList] = useState<StaffMember[]>([]);
-  const [classrooms, setClassrooms] = useState<string[]>([]);
 
   useEffect(() => {
     if (selectedDepartment) {
       fetchDepartmentStaff();
-      fetchClassrooms();
     }
   }, [selectedDepartment]);
 
@@ -79,16 +75,6 @@ const StaffAllocationForm = ({ selectedDepartment, onStaffAllocation }: StaffAll
     setStaffList(mockStaff);
   };
 
-  const fetchClassrooms = () => {
-    // Mock data - replace with actual API call
-    const mockClassrooms = [
-      `${selectedDepartment}-1A`, `${selectedDepartment}-1B`, `${selectedDepartment}-2A`, 
-      `${selectedDepartment}-2B`, `${selectedDepartment}-3A`, `${selectedDepartment}-3B`,
-      `${selectedDepartment}-4A`, `${selectedDepartment}-4B`
-    ];
-    setClassrooms(mockClassrooms);
-  };
-
   const updateStaffAllocation = (staffId: string, field: keyof StaffMember, value: any) => {
     setStaffList(prev => prev.map(staff => 
       staff.id === staffId ? { ...staff, [field]: value } : staff
@@ -127,6 +113,7 @@ const StaffAllocationForm = ({ selectedDepartment, onStaffAllocation }: StaffAll
           <CardTitle className="flex items-center space-x-2 text-foreground">
             <Users className="h-5 w-5 text-accent" />
             <span>Staff Allocation - {selectedDepartment} Department</span>
+            <p className="text-sm text-muted-foreground ml-4">(Note: Tutor assignments are now managed in Staff Management)</p>
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -158,7 +145,7 @@ const StaffAllocationForm = ({ selectedDepartment, onStaffAllocation }: StaffAll
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4">
                 {/* Core Teaching Hours */}
                 <div className="space-y-2">
                   <Label className="text-sm font-medium flex items-center space-x-1">
@@ -173,30 +160,6 @@ const StaffAllocationForm = ({ selectedDepartment, onStaffAllocation }: StaffAll
                     onChange={(e) => updateStaffAllocation(staff.id, 'allocatedHours', parseInt(e.target.value) || 0)}
                     className="bg-background border-border"
                   />
-                </div>
-
-                {/* Tutor Classroom Assignment */}
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium flex items-center space-x-1">
-                    <Building className="h-4 w-4" />
-                    <span>Tutor for Classroom</span>
-                  </Label>
-                  <Select
-                    value={staff.tutorClassroom || "none"}
-                    onValueChange={(value) => updateStaffAllocation(staff.id, 'tutorClassroom', value === "none" ? undefined : value)}
-                  >
-                    <SelectTrigger className="bg-background border-border">
-                      <SelectValue placeholder="Select classroom (optional)" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">No tutor assignment</SelectItem>
-                      {classrooms.map((classroom) => (
-                        <SelectItem key={classroom} value={classroom}>
-                          {classroom}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
                 </div>
               </div>
 

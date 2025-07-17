@@ -14,6 +14,87 @@ export type Database = {
   }
   public: {
     Tables: {
+      audit_logs: {
+        Row: {
+          id: string
+          ip_address: unknown | null
+          new_values: Json | null
+          old_values: Json | null
+          operation: string
+          table_name: string
+          timestamp: string
+          user_agent: string | null
+          user_email: string | null
+          user_id: string | null
+        }
+        Insert: {
+          id?: string
+          ip_address?: unknown | null
+          new_values?: Json | null
+          old_values?: Json | null
+          operation: string
+          table_name: string
+          timestamp?: string
+          user_agent?: string | null
+          user_email?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          id?: string
+          ip_address?: unknown | null
+          new_values?: Json | null
+          old_values?: Json | null
+          operation?: string
+          table_name?: string
+          timestamp?: string
+          user_agent?: string | null
+          user_email?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      classrooms: {
+        Row: {
+          building: string | null
+          capacity: number
+          created_at: string
+          department: string
+          facilities: string[] | null
+          floor: number | null
+          id: string
+          is_active: boolean
+          name: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          building?: string | null
+          capacity?: number
+          created_at?: string
+          department: string
+          facilities?: string[] | null
+          floor?: number | null
+          id?: string
+          is_active?: boolean
+          name: string
+          type?: string
+          updated_at?: string
+        }
+        Update: {
+          building?: string | null
+          capacity?: number
+          created_at?: string
+          department?: string
+          facilities?: string[] | null
+          floor?: number | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -89,6 +170,125 @@ export type Database = {
         }
         Relationships: []
       }
+      timetable_entries: {
+        Row: {
+          academic_year: string
+          classroom_id: string
+          created_at: string
+          created_by: string | null
+          day_of_week: string
+          department: string
+          end_time: string
+          id: string
+          is_active: boolean
+          semester: string
+          session_type: string
+          staff_id: string
+          start_time: string
+          student_group: string
+          subject_code: string
+          subject_name: string
+          updated_at: string
+        }
+        Insert: {
+          academic_year: string
+          classroom_id: string
+          created_at?: string
+          created_by?: string | null
+          day_of_week: string
+          department: string
+          end_time: string
+          id?: string
+          is_active?: boolean
+          semester: string
+          session_type?: string
+          staff_id: string
+          start_time: string
+          student_group: string
+          subject_code: string
+          subject_name: string
+          updated_at?: string
+        }
+        Update: {
+          academic_year?: string
+          classroom_id?: string
+          created_at?: string
+          created_by?: string | null
+          day_of_week?: string
+          department?: string
+          end_time?: string
+          id?: string
+          is_active?: boolean
+          semester?: string
+          session_type?: string
+          staff_id?: string
+          start_time?: string
+          student_group?: string
+          subject_code?: string
+          subject_name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "timetable_entries_classroom_id_fkey"
+            columns: ["classroom_id"]
+            isOneToOne: false
+            referencedRelation: "classrooms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "timetable_entries_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tutor_assignments: {
+        Row: {
+          academic_year: string
+          assigned_at: string
+          assigned_by: string | null
+          classroom: string
+          department: string
+          id: string
+          is_active: boolean
+          semester: string
+          staff_id: string
+        }
+        Insert: {
+          academic_year: string
+          assigned_at?: string
+          assigned_by?: string | null
+          classroom: string
+          department: string
+          id?: string
+          is_active?: boolean
+          semester: string
+          staff_id: string
+        }
+        Update: {
+          academic_year?: string
+          assigned_at?: string
+          assigned_by?: string | null
+          classroom?: string
+          department?: string
+          id?: string
+          is_active?: boolean
+          semester?: string
+          staff_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tutor_assignments_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -97,6 +297,33 @@ export type Database = {
       get_current_user_role: {
         Args: Record<PropertyKey, never>
         Returns: string
+      }
+      get_user_permissions: {
+        Args: { user_id?: string }
+        Returns: {
+          role: string
+          department: string
+          can_manage_staff: boolean
+          can_manage_timetables: boolean
+          can_view_reports: boolean
+          can_manage_classrooms: boolean
+        }[]
+      }
+      is_classroom_available: {
+        Args: {
+          classroom_id: string
+          day: string
+          start_time: string
+          end_time: string
+          semester: string
+          academic_year: string
+          exclude_entry_id?: string
+        }
+        Returns: boolean
+      }
+      validate_staff_workload: {
+        Args: { staff_id: string; additional_hours?: number }
+        Returns: boolean
       }
     }
     Enums: {

@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import Navigation from "@/components/Navigation";
 import StaffForm from "@/components/StaffForm";
 import StaffActions from "@/components/StaffActions";
+import TutorAssignmentModal from "@/components/TutorAssignmentModal";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import type { User } from "@supabase/supabase-js";
@@ -23,6 +24,12 @@ interface Staff {
   current_hours: number;
   subjects: string[];
   is_active: boolean;
+  tutor_assignments?: Array<{
+    id: string;
+    classroom: string;
+    academic_year: string;
+    semester: string;
+  }>;
 }
 
 interface UserProfile {
@@ -38,6 +45,8 @@ const StaffManagement = () => {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingStaff, setEditingStaff] = useState<Staff | null>(null);
+  const [showTutorModal, setShowTutorModal] = useState(false);
+  const [selectedStaffForTutor, setSelectedStaffForTutor] = useState<Staff | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -58,7 +67,6 @@ const StaffManagement = () => {
         if (session?.user) {
           setUser(session.user);
           
-          // Fetch user profile
           try {
             const { data: profile, error: profileError } = await supabase
               .from('profiles')
@@ -69,7 +77,6 @@ const StaffManagement = () => {
             if (!profileError && profile) {
               setUserProfile(profile);
             } else {
-              // Fallback role based on email
               setUserProfile({
                 role: session.user.email?.includes('admin') ? 'admin' : 'user'
               });
@@ -81,7 +88,6 @@ const StaffManagement = () => {
             });
           }
 
-          // Fetch staff data
           await fetchStaff();
         }
       } catch (error) {
@@ -95,7 +101,6 @@ const StaffManagement = () => {
 
     checkAuthAndFetchData();
 
-    // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (!mounted) return;
@@ -138,14 +143,30 @@ const StaffManagement = () => {
 
   const fetchStaff = async () => {
     try {
-      const { data, error } = await supabase
+      const { data: staffResult, error: staffError } = await supabase
         .from('staff')
         .select('*')
         .order('name');
 
-      if (error) throw error;
+      if (staffError) throw staffError;
 
-      setStaffData(data || []);
+      // Fetch tutor assignments for each staff member
+      const staffWithTutors = await Promise.all(
+        (staffResult || []).map(async (staff) => {
+          const { data: tutorAssignments } = await supabase
+            .from('tutor_assignments')
+            .select('id, classroom, academic_year, semester')
+            .eq('staff_id', staff.id)
+            .eq('is_active', true);
+
+          return {
+            ...staff,
+            tutor_assignments: tutorAssignments || []
+          };
+        })
+      );
+
+      setStaffData(staffWithTutors);
     } catch (error: any) {
       console.error('Error fetching staff:', error);
       toast({
@@ -241,6 +262,14 @@ const StaffManagement = () => {
     });
   };
 
+  const handleAssignTutor = (staffId: string) => {
+    const staff = staffData.find(s => s.id === staffId);
+    if (staff) {
+      setSelectedStaffForTutor(staff);
+      setShowTutorModal(true);
+    }
+  };
+
   const handleFormSave = () => {
     setShowForm(false);
     setEditingStaff(null);
@@ -250,6 +279,15 @@ const StaffManagement = () => {
   const handleFormCancel = () => {
     setShowForm(false);
     setEditingStaff(null);
+  };
+
+  const handleTutorModalClose = () => {
+    setShowTutorModal(false);
+    setSelectedStaffForTutor(null);
+  };
+
+  const handleTutorAssignmentSuccess = () => {
+    fetchStaff();
   };
 
   if (loading) {
@@ -297,7 +335,7 @@ const StaffManagement = () => {
           <div>
             <h1 className="text-3xl font-bold text-foreground mb-2 font-montserrat">Staff Management</h1>
             <p className="text-muted-foreground">
-              {isAdmin ? "Manage faculty workload, roles, and assignments for Anna University departments" : "View faculty information and workload for Anna University departments"}
+              {isAdmin ? "Manage faculty workload, roles, tutor assignments for Anna University departments" : "View faculty information and workload for Anna University departments"}
             </p>
             {userProfile && (
               <div className="mt-2">
@@ -441,6 +479,7 @@ const StaffManagement = () => {
                       onEdit={handleEditStaff}
                       onDelete={handleDeleteStaff}
                       onView={handleViewStaff}
+                      onAssignTutor={handleAssignTutor}
                     />
                   </div>
                 </CardHeader>
@@ -478,6 +517,20 @@ const StaffManagement = () => {
                     </div>
                   </div>
 
+                  {/* Tutor Assignments */}
+                  {staff.tutor_assignments && staff.tutor_assignments.length > 0 && (
+                    <div>
+                      <p className="text-sm font-medium text-foreground mb-2">Tutor for Classrooms:</p>
+                      <div className="flex flex-wrap gap-1">
+                        {staff.tutor_assignments.map((assignment, idx) => (
+                          <Badge key={idx} variant="secondary" className="text-xs bg-blue-100 text-blue-800">
+                            {assignment.classroom}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   {/* Subjects */}
                   <div>
                     <p className="text-sm font-medium text-foreground mb-2">Assigned Subjects:</p>
@@ -508,6 +561,18 @@ const StaffManagement = () => {
           </motion.div>
         )}
       </div>
+
+      {/* Tutor Assignment Modal */}
+      {selectedStaffForTutor && (
+        <TutorAssignmentModal
+          staffId={selectedStaffForTutor.id}
+          staffName={selectedStaffForTutor.name}
+          department={selectedStaffForTutor.department}
+          isOpen={showTutorModal}
+          onClose={handleTutorModalClose}
+          onSuccess={handleTutorAssignmentSuccess}
+        />
+      )}
     </div>
   );
 };
