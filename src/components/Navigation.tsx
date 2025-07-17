@@ -10,11 +10,14 @@ import {
   User, 
   LogOut, 
   Home,
-  BookOpen
+  BookOpen,
+  Menu,
+  X
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import ThemeToggle from "./ThemeToggle";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -29,6 +32,7 @@ interface UserProfile {
 const Navigation = () => {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
@@ -141,12 +145,12 @@ const Navigation = () => {
   ];
 
   const getRoleColor = (role: string) => {
-    return role === "admin" ? "bg-accent text-accent-foreground" : "bg-primary text-primary-foreground";
+    return role === "admin" ? "bg-destructive text-destructive-foreground" : "bg-primary text-primary-foreground";
   };
 
   if (isLoading) {
     return (
-      <nav className="bg-card/95 backdrop-blur-md border-b border-border">
+      <nav className="bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="animate-pulse flex items-center space-x-4">
@@ -160,14 +164,37 @@ const Navigation = () => {
     );
   }
 
+  const NavigationContent = () => (
+    <>
+      {navigationItems.map((item) => {
+        const isActive = location.pathname === item.path;
+        return (
+          <Link
+            key={item.path}
+            to={item.path}
+            className={`flex items-center space-x-3 px-4 py-3 rounded-lg text-sm font-medium transition-all hover:bg-accent hover:text-accent-foreground ${
+              isActive
+                ? "bg-accent text-accent-foreground shadow-sm"
+                : "text-muted-foreground"
+            }`}
+            onClick={() => setIsMobileMenuOpen(false)}
+          >
+            <item.icon className="h-5 w-5" />
+            <span>{item.name}</span>
+          </Link>
+        );
+      })}
+    </>
+  );
+
   return (
-    <nav className="bg-card/95 backdrop-blur-md border-b border-border sticky top-0 z-40">
+    <nav className="bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border sticky top-0 z-50">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           {/* Logo and Brand */}
           <Link to="/" className="flex items-center space-x-3 hover:scale-105 transition-transform">
-            <div className="w-8 h-8 bg-accent rounded-lg flex items-center justify-center">
-              <Calendar className="h-5 w-5 text-accent-foreground" />
+            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+              <Calendar className="h-5 w-5 text-primary-foreground" />
             </div>
             <div className="hidden sm:block">
               <h1 className="font-bold text-lg font-montserrat text-foreground">SKCT</h1>
@@ -177,32 +204,16 @@ const Navigation = () => {
 
           {/* Desktop Navigation */}
           <div className="hidden lg:flex items-center space-x-1">
-            {navigationItems.map((item) => {
-              const isActive = location.pathname === item.path;
-              return (
-                <Link
-                  key={item.path}
-                  to={item.path}
-                  className={`flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
-                    isActive
-                      ? "bg-accent text-accent-foreground shadow-sm"
-                      : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-                  }`}
-                >
-                  <item.icon className="h-4 w-4" />
-                  <span>{item.name}</span>
-                </Link>
-              );
-            })}
+            <NavigationContent />
           </div>
 
-          {/* User Profile and Actions */}
+          {/* Right side - Theme Toggle, Profile, and Mobile Menu */}
           <div className="flex items-center space-x-3">
             <ThemeToggle />
             
-            {/* User Profile */}
-            <div className="flex items-center space-x-3">
-              <div className="hidden md:block text-right">
+            {/* Desktop User Profile */}
+            <div className="hidden md:flex items-center space-x-3">
+              <div className="text-right">
                 <p className="text-sm font-medium text-foreground">
                   {userProfile?.full_name || "User"}
                 </p>
@@ -217,7 +228,7 @@ const Navigation = () => {
               </div>
               
               <Link to="/profile" className="hover:scale-105 transition-transform">
-                <Avatar className="h-8 w-8 border-2 border-accent/20">
+                <Avatar className="h-8 w-8 border-2 border-primary/20">
                   <AvatarImage src={profileImage} alt={userProfile?.full_name || "User"} />
                   <AvatarFallback className="bg-primary text-primary-foreground font-bold text-sm">
                     {(userProfile?.full_name || userProfile?.email || "U").charAt(0).toUpperCase()}
@@ -229,12 +240,73 @@ const Navigation = () => {
                 onClick={handleSignOut}
                 variant="ghost"
                 size="sm"
-                className="text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                className="text-muted-foreground hover:text-foreground hover:bg-accent"
               >
                 <LogOut className="h-4 w-4" />
-                <span className="hidden sm:inline ml-2">Sign Out</span>
+                <span className="hidden xl:inline ml-2">Sign Out</span>
               </Button>
             </div>
+
+            {/* Mobile Menu */}
+            <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
+              <SheetTrigger asChild className="lg:hidden">
+                <Button variant="ghost" size="sm">
+                  <Menu className="h-5 w-5" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="right" className="w-72">
+                <div className="flex flex-col h-full">
+                  {/* Mobile User Profile */}
+                  <div className="flex items-center space-x-3 p-4 border-b border-border">
+                    <Avatar className="h-10 w-10 border-2 border-primary/20">
+                      <AvatarImage src={profileImage} alt={userProfile?.full_name || "User"} />
+                      <AvatarFallback className="bg-primary text-primary-foreground font-bold">
+                        {(userProfile?.full_name || userProfile?.email || "U").charAt(0).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-foreground">
+                        {userProfile?.full_name || "User"}
+                      </p>
+                      <Badge 
+                        variant="outline" 
+                        className={`text-xs ${getRoleColor(userProfile?.role || "user")}`}
+                      >
+                        {userProfile?.role?.charAt(0).toUpperCase()}{userProfile?.role?.slice(1)}
+                      </Badge>
+                    </div>
+                  </div>
+
+                  {/* Mobile Navigation */}
+                  <div className="flex-1 py-4 space-y-2">
+                    <NavigationContent />
+                  </div>
+
+                  {/* Mobile Profile and Sign Out */}
+                  <div className="border-t border-border pt-4 space-y-2">
+                    <Link
+                      to="/profile"
+                      className="flex items-center space-x-3 px-4 py-3 rounded-lg text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-all"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      <User className="h-5 w-5" />
+                      <span>Profile</span>
+                    </Link>
+                    <Button
+                      onClick={() => {
+                        handleSignOut();
+                        setIsMobileMenuOpen(false);
+                      }}
+                      variant="ghost"
+                      className="w-full justify-start px-4 py-3 text-muted-foreground hover:text-foreground hover:bg-accent"
+                    >
+                      <LogOut className="h-5 w-5 mr-3" />
+                      Sign Out
+                    </Button>
+                  </div>
+                </div>
+              </SheetContent>
+            </Sheet>
           </div>
         </div>
       </div>
