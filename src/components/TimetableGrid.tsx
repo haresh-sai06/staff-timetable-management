@@ -85,14 +85,6 @@ const TimetableGrid = ({ department, semester, viewMode, onAddClass }: Timetable
     }, 1000);
   }, [department, semester, viewMode]);
 
-  const getEntryForSlot = (day: string, timeSlot: string) => {
-    return timetableData.find(entry => 
-      entry.day === day && 
-      (entry.timeSlot === timeSlot || 
-       (entry.duration && entry.duration > 1 && this.isTimeSlotCoveredByEntry(entry, timeSlot)))
-    );
-  };
-
   const isTimeSlotCoveredByEntry = (entry: TimetableEntry, timeSlot: string): boolean => {
     if (!entry.duration || entry.duration <= 1) return false;
     
@@ -102,6 +94,14 @@ const TimetableGrid = ({ department, semester, viewMode, onAddClass }: Timetable
     const slotEnd = timeSlot.split('-')[1];
     
     return slotStart >= entryStart && slotEnd <= entryEnd;
+  };
+
+  const getEntryForSlot = (day: string, timeSlot: string) => {
+    return timetableData.find(entry => 
+      entry.day === day && 
+      (entry.timeSlot === timeSlot || 
+       (entry.duration && entry.duration > 1 && isTimeSlotCoveredByEntry(entry, timeSlot)))
+    );
   };
 
   const handleAddClass = (day: string, timeSlot: string) => {
