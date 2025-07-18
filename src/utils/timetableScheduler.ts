@@ -1,4 +1,3 @@
-
 export interface Subject {
   id: string;
   name: string;
@@ -17,9 +16,10 @@ export interface Staff {
   name: string;
   role: "Prof" | "AsstProf";
   department: string;
-  maxHours: number;
-  currentHours: number;
+  max_hours: number;
+  current_hours: number;
   subjects?: string[]; // Subject codes this staff can teach
+  is_active?: boolean;
 }
 
 export interface Classroom {
@@ -28,6 +28,7 @@ export interface Classroom {
   type: "lecture" | "lab";
   capacity: number;
   department: string;
+  is_active?: boolean;
 }
 
 export interface StudentGroup {
@@ -93,12 +94,33 @@ class TimetableScheduler {
   ): ScheduleResult {
     const timetable: TimetableEntry[] = [];
     const conflicts: Conflict[] = [];
-    const assignedSlots: Set<string> = new Set();
-    const staffSchedule: Map<string, Set<string>> = new Map();
-    const classroomSchedule: Map<string, Set<string>> = new Map();
-    const studentGroupSchedule: Map<string, Set<string>> = new Map();
 
     try {
+      // Enhanced pre-scheduling validation
+      const { enhancedValidator } = await import("./enhancedTimetableValidator");
+      const validationResult = enhancedValidator.validatePreSchedulingRequirements(
+        subjects, staff, classrooms, studentGroups, department, year, semester
+      );
+
+      // Add validation conflicts
+      conflicts.push(...validationResult.conflicts);
+
+      // If there are high-severity conflicts, don't proceed with scheduling
+      const highSeverityConflicts = conflicts.filter(c => c.severity === 'high');
+      if (highSeverityConflicts.length > 0) {
+        conflicts.push({
+          type: "pre_scheduling_validation_failed",
+          description: `Cannot proceed with scheduling due to ${highSeverityConflicts.length} critical issues. Please resolve them first.`,
+          severity: "high"
+        });
+        return { timetable, conflicts };
+      }
+
+      const assignedSlots: Set<string> = new Set();
+      const staffSchedule: Map<string, Set<string>> = new Map();
+      const classroomSchedule: Map<string, Set<string>> = new Map();
+      const studentGroupSchedule: Map<string, Set<string>> = new Map();
+
       // Filter subjects for the specific department, year, and semester
       const relevantSubjects = subjects.filter(
         subject => 
@@ -107,11 +129,17 @@ class TimetableScheduler {
           subject.semester === semester
       );
 
-      // Enhanced staff filtering with subject compatibility
-      const departmentStaff = staff.filter(s => s.department === department);
+      // Enhanced staff filtering with proper validation
+      const departmentStaff = staff.filter(s => 
+        s.department === department && 
+        s.is_active !== false
+      );
       
-      // Filter classrooms for the department
-      const departmentClassrooms = classrooms.filter(c => c.department === department);
+      // Filter active classrooms for the department
+      const departmentClassrooms = classrooms.filter(c => 
+        c.department === department && 
+        c.is_active !== false
+      );
       
       // Filter student groups for the department and year
       const relevantGroups = studentGroups.filter(
@@ -132,13 +160,13 @@ class TimetableScheduler {
       departmentClassrooms.forEach(c => classroomSchedule.set(c.id, new Set()));
       relevantGroups.forEach(g => studentGroupSchedule.set(g.id, new Set()));
 
-      // Separate labs and theory subjects for better scheduling
+      // Enhanced scheduling: Labs first (they need consecutive periods)
       const labSubjects = relevantSubjects.filter(s => s.type === "lab");
       const theorySubjects = relevantSubjects.filter(s => s.type === "theory");
 
-      // Schedule labs first (they need consecutive periods and specific requirements)
+      // Schedule labs with enhanced background checking
       for (const labSubject of labSubjects) {
-        this.scheduleLabSubject(
+        await this.scheduleLabSubjectEnhanced(
           labSubject,
           departmentStaff,
           departmentClassrooms,
@@ -153,7 +181,7 @@ class TimetableScheduler {
 
       // Then schedule theory subjects
       for (const theorySubject of theorySubjects) {
-        this.scheduleTheorySubject(
+        await this.scheduleTheorySubjectEnhanced(
           theorySubject,
           departmentStaff,
           departmentClassrooms,
@@ -166,13 +194,13 @@ class TimetableScheduler {
         );
       }
 
-      // Enhanced conflict validation
-      this.validateScheduleEnhanced(timetable, conflicts);
+      // Enhanced conflict validation with cross-department checks
+      await this.validateScheduleEnhanced(timetable, conflicts, staff, classrooms, department);
 
     } catch (error) {
       conflicts.push({
         type: "system_error",
-        description: `Scheduling failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        description: `Enhanced scheduling failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
         severity: "high"
       });
     }
@@ -180,7 +208,7 @@ class TimetableScheduler {
     return { timetable, conflicts };
   }
 
-  private scheduleLabSubject(
+  private async scheduleLabSubjectEnhanced(
     subject: Subject,
     staff: Staff[],
     classrooms: Classroom[],
@@ -190,47 +218,63 @@ class TimetableScheduler {
     staffSchedule: Map<string, Set<string>>,
     classroomSchedule: Map<string, Set<string>>,
     studentGroupSchedule: Map<string, Set<string>>
-  ): void {
-    const labDuration = subject.duration || 2; // Default 2 periods for labs
+  ): Promise<void> {
+    const labDuration = subject.duration || 2;
     
-    // Find available lab staff (with subject expertise if specified)
-    const availableStaff = staff.find(s => 
-      s.currentHours + labDuration <= s.maxHours &&
-      (!s.subjects || s.subjects.includes(subject.code))
+    // Enhanced staff selection with subject expertise validation
+    const qualifiedStaff = staff.filter(s => 
+      s.current_hours + labDuration <= s.max_hours &&
+      (!s.subjects || s.subjects.length === 0 || s.subjects.includes(subject.code)) &&
+      s.is_active !== false
     );
 
+    // Sort by experience (Prof > AsstProf) and current workload
+    qualifiedStaff.sort((a, b) => {
+      if (a.role === 'Prof' && b.role === 'AsstProf') return -1;
+      if (a.role === 'AsstProf' && b.role === 'Prof') return 1;
+      return (a.current_hours || 0) - (b.current_hours || 0);
+    });
+
+    const availableStaff = qualifiedStaff[0];
     if (!availableStaff) {
       conflicts.push({
-        type: "staff_unavailable",
-        description: `No available qualified staff for lab ${subject.name}`,
+        type: "no_qualified_lab_staff",
+        description: `No qualified staff available for lab ${subject.name} with required expertise`,
         severity: "high"
       });
       return;
     }
 
-    // Find available lab classroom
-    const availableLabClassroom = classrooms.find(c => c.type === "lab");
-    if (!availableLabClassroom) {
+    // Enhanced lab classroom selection
+    const availableLabClassrooms = classrooms.filter(c => 
+      c.type === "lab" && 
+      c.is_active !== false
+    );
+    
+    if (availableLabClassrooms.length === 0) {
       conflicts.push({
-        type: "classroom_unavailable",
-        description: `No lab classroom available for ${subject.name}`,
+        type: "no_lab_classroom",
+        description: `No active lab classroom available for ${subject.name}`,
         severity: "high"
       });
       return;
     }
 
-    // Find student group
-    const studentGroup = studentGroups[0];
+    // Select best lab classroom based on capacity and facilities
+    const bestLabClassroom = availableLabClassrooms.sort((a, b) => b.capacity - a.capacity)[0];
+
+    // Find appropriate student group
+    const studentGroup = studentGroups.find(g => g.strength <= bestLabClassroom.capacity);
     if (!studentGroup) {
       conflicts.push({
-        type: "no_student_group",
-        description: `No student group found for ${subject.name}`,
+        type: "student_group_capacity_mismatch",
+        description: `No student group fits in available lab classroom for ${subject.name}`,
         severity: "high"
       });
       return;
     }
 
-    // Try to schedule lab with consecutive periods
+    // Enhanced lab scheduling with consecutive period validation
     let scheduled = false;
     const preferredSlots = subject.priority === "morning" ? this.preLunchSlots : this.postLunchSlots;
     
@@ -238,19 +282,18 @@ class TimetableScheduler {
       for (let i = 0; i <= preferredSlots.length - labDuration; i++) {
         const consecutiveSlots = preferredSlots.slice(i, i + labDuration);
         
-        // Check if all consecutive slots are available
+        // Enhanced availability check
         const allSlotsAvailable = consecutiveSlots.every(timeSlot => {
           const staffKey = `${day}-${timeSlot}-${availableStaff.id}`;
-          const classroomKey = `${day}-${timeSlot}-${availableLabClassroom.id}`;
+          const classroomKey = `${day}-${timeSlot}-${bestLabClassroom.id}`;
           const groupKey = `${day}-${timeSlot}-${studentGroup.id}`;
           
           return !staffSchedule.get(availableStaff.id)?.has(staffKey) &&
-                 !classroomSchedule.get(availableLabClassroom.id)?.has(classroomKey) &&
+                 !classroomSchedule.get(bestLabClassroom.id)?.has(classroomKey) &&
                  !studentGroupSchedule.get(studentGroup.id)?.has(groupKey);
         });
 
         if (allSlotsAvailable) {
-          // Schedule the lab for consecutive periods
           const startTime = consecutiveSlots[0];
           const endTime = consecutiveSlots[consecutiveSlots.length - 1].split('-')[1];
           const combinedTimeSlot = `${startTime.split('-')[0]}-${endTime}`;
@@ -263,7 +306,7 @@ class TimetableScheduler {
             subjectCode: subject.code,
             staff: availableStaff.name,
             staffRole: availableStaff.role,
-            classroom: availableLabClassroom.name,
+            classroom: bestLabClassroom.name,
             studentGroup: studentGroup.name,
             type: subject.type,
             hasConflict: false,
@@ -276,16 +319,16 @@ class TimetableScheduler {
           // Mark all consecutive slots as occupied
           consecutiveSlots.forEach(timeSlot => {
             const staffKey = `${day}-${timeSlot}-${availableStaff.id}`;
-            const classroomKey = `${day}-${timeSlot}-${availableLabClassroom.id}`;
+            const classroomKey = `${day}-${timeSlot}-${bestLabClassroom.id}`;
             const groupKey = `${day}-${timeSlot}-${studentGroup.id}`;
             
             staffSchedule.get(availableStaff.id)?.add(staffKey);
-            classroomSchedule.get(availableLabClassroom.id)?.add(classroomKey);
+            classroomSchedule.get(bestLabClassroom.id)?.add(classroomKey);
             studentGroupSchedule.get(studentGroup.id)?.add(groupKey);
           });
 
           // Update staff hours
-          availableStaff.currentHours += labDuration;
+          availableStaff.current_hours = (availableStaff.current_hours || 0) + labDuration;
           scheduled = true;
           break;
         }
@@ -295,14 +338,14 @@ class TimetableScheduler {
 
     if (!scheduled) {
       conflicts.push({
-        type: "lab_scheduling_conflict",
-        description: `Could not schedule lab ${subject.name} - no ${labDuration} consecutive periods available`,
-        severity: "medium"
+        type: "lab_scheduling_failed",
+        description: `Could not schedule lab ${subject.name} - no ${labDuration} consecutive periods available after enhanced validation`,
+        severity: "high"
       });
     }
   }
 
-  private scheduleTheorySubject(
+  private async scheduleTheorySubjectEnhanced(
     subject: Subject,
     staff: Staff[],
     classrooms: Classroom[],
@@ -312,56 +355,69 @@ class TimetableScheduler {
     staffSchedule: Map<string, Set<string>>,
     classroomSchedule: Map<string, Set<string>>,
     studentGroupSchedule: Map<string, Set<string>>
-  ): void {
-    // Find available theory staff
-    const availableStaff = staff.find(s => 
-      s.currentHours < s.maxHours &&
-      (!s.subjects || s.subjects.includes(subject.code))
+  ): Promise<void> {
+    // Enhanced theory staff selection
+    const qualifiedStaff = staff.filter(s => 
+      s.current_hours < s.max_hours &&
+      (!s.subjects || s.subjects.length === 0 || s.subjects.includes(subject.code)) &&
+      s.is_active !== false
     );
 
+    qualifiedStaff.sort((a, b) => {
+      if (a.role === 'Prof' && b.role === 'AsstProf') return -1;
+      if (a.role === 'AsstProf' && b.role === 'Prof') return 1;
+      return (a.current_hours || 0) - (b.current_hours || 0);
+    });
+
+    const availableStaff = qualifiedStaff[0];
     if (!availableStaff) {
       conflicts.push({
-        type: "staff_unavailable",
-        description: `No available qualified staff for ${subject.name}`,
+        type: "no_qualified_theory_staff",
+        description: `No qualified staff available for theory subject ${subject.name}`,
         severity: "high"
       });
       return;
     }
 
-    // Find available lecture classroom
-    const availableLectureClassroom = classrooms.find(c => c.type === "lecture");
-    if (!availableLectureClassroom) {
+    // Enhanced lecture classroom selection
+    const availableLectureClassrooms = classrooms.filter(c => 
+      c.type === "lecture" && 
+      c.is_active !== false
+    );
+
+    if (availableLectureClassrooms.length === 0) {
       conflicts.push({
-        type: "classroom_unavailable",
-        description: `No lecture classroom available for ${subject.name}`,
+        type: "no_lecture_classroom",
+        description: `No active lecture classroom available for ${subject.name}`,
         severity: "high"
       });
       return;
     }
 
-    // Find student group
-    const studentGroup = studentGroups[0];
+    const bestLectureClassroom = availableLectureClassrooms.sort((a, b) => b.capacity - a.capacity)[0];
+
+    const studentGroup = studentGroups.find(g => g.strength <= bestLectureClassroom.capacity);
     if (!studentGroup) {
       conflicts.push({
-        type: "no_student_group",
-        description: `No student group found for ${subject.name}`,
+        type: "student_group_capacity_mismatch",
+        description: `No student group fits in available lecture classroom for ${subject.name}`,
         severity: "high"
       });
       return;
     }
 
-    // Try to schedule theory subject
+    // Enhanced theory scheduling
     let scheduled = false;
     const preferredSlots = this.getPreferredTimeSlots(subject.priority);
     
     for (const day of this.days) {
       for (const timeSlot of preferredSlots) {
         const staffKey = `${day}-${timeSlot}-${availableStaff.id}`;
-        const classroomKey = `${day}-${timeSlot}-${availableLectureClassroom.id}`;
+        const classroomKey = `${day}-${timeSlot}-${bestLectureClassroom.id}`;
         const groupKey = `${day}-${timeSlot}-${studentGroup.id}`;
         
         if (!staffSchedule.get(availableStaff.id)?.has(staffKey) &&
-            !classroomSchedule.get(availableLectureClassroom.id)?.has(classroomKey) &&
+            !classroomSchedule.get(bestLectureClassroom.id)?.has(classroomKey) &&
             !studentGroupSchedule.get(studentGroup.id)?.has(groupKey)) {
           
           const entry: TimetableEntry = {
@@ -372,7 +428,7 @@ class TimetableScheduler {
             subjectCode: subject.code,
             staff: availableStaff.name,
             staffRole: availableStaff.role,
-            classroom: availableLectureClassroom.name,
+            classroom: bestLectureClassroom.name,
             studentGroup: studentGroup.name,
             type: subject.type,
             hasConflict: false,
@@ -383,11 +439,10 @@ class TimetableScheduler {
           timetable.push(entry);
           
           staffSchedule.get(availableStaff.id)?.add(staffKey);
-          classroomSchedule.get(availableLectureClassroom.id)?.add(classroomKey);
+          classroomSchedule.get(bestLectureClassroom.id)?.add(classroomKey);
           studentGroupSchedule.get(studentGroup.id)?.add(groupKey);
           
-          // Update staff hours
-          availableStaff.currentHours += 1;
+          availableStaff.current_hours = (availableStaff.current_hours || 0) + 1;
           scheduled = true;
           break;
         }
@@ -397,8 +452,8 @@ class TimetableScheduler {
 
     if (!scheduled) {
       conflicts.push({
-        type: "theory_scheduling_conflict",
-        description: `Could not schedule ${subject.name} - no available time slots`,
+        type: "theory_scheduling_failed",
+        description: `Could not schedule theory subject ${subject.name} after enhanced validation`,
         severity: "medium"
       });
     }
@@ -415,29 +470,42 @@ class TimetableScheduler {
     }
   }
 
-  private validateScheduleEnhanced(timetable: TimetableEntry[], conflicts: Conflict[]): void {
-    // Check for conflicts in the generated timetable
+  private async validateScheduleEnhanced(
+    timetable: TimetableEntry[], 
+    conflicts: Conflict[], 
+    allStaff: Staff[], 
+    allClassrooms: Classroom[], 
+    department: string
+  ): Promise<void> {
+    // Enhanced validation with cross-department conflict checking
+    try {
+      const { enhancedValidator } = await import("./enhancedTimetableValidator");
+      const crossDepartmentValidation = enhancedValidator.validateCrossDepartmentConflicts(
+        allStaff, allClassrooms, department, timetable
+      );
+      conflicts.push(...crossDepartmentValidation.conflicts);
+    } catch (error) {
+      console.warn("Cross-department validation failed:", error);
+    }
+
+    // Existing validation logic
     const slotMap = new Map<string, TimetableEntry[]>();
     
     timetable.forEach(entry => {
-      // For multi-period entries, check each individual period
       if (entry.duration && entry.duration > 1) {
-        const [startTime, endTime] = entry.timeSlot.split('-');
-        const startHour = parseInt(startTime.split(':')[0]);
-        const startMinute = parseInt(startTime.split(':')[1]);
+        // Handle multi-period entries
+        const [startTime] = entry.timeSlot.split('-');
+        const startIndex = this.timeSlots.findIndex(slot => slot.startsWith(startTime));
         
         for (let i = 0; i < entry.duration; i++) {
-          const periodStart = new Date();
-          periodStart.setHours(startHour, startMinute + (i * 55), 0, 0);
-          const periodEnd = new Date();
-          periodEnd.setHours(startHour, startMinute + ((i + 1) * 55), 0, 0);
-          
-          const periodSlot = `${entry.day}-${periodStart.toTimeString().slice(0, 5)}-${periodEnd.toTimeString().slice(0, 5)}`;
-          
-          if (!slotMap.has(periodSlot)) {
-            slotMap.set(periodSlot, []);
+          if (startIndex + i < this.timeSlots.length) {
+            const periodSlot = this.timeSlots[startIndex + i];
+            const key = `${entry.day}-${periodSlot}`;
+            if (!slotMap.has(key)) {
+              slotMap.set(key, []);
+            }
+            slotMap.get(key)!.push(entry);
           }
-          slotMap.get(periodSlot)!.push(entry);
         }
       } else {
         const key = `${entry.day}-${entry.timeSlot}`;
@@ -448,7 +516,7 @@ class TimetableScheduler {
       }
     });
 
-    // Check for multiple entries in same slot for same resource
+    // Check for conflicts
     slotMap.forEach((entries, slot) => {
       if (entries.length > 1) {
         const staffConflicts = this.findDuplicates(entries, 'staff');
@@ -458,7 +526,7 @@ class TimetableScheduler {
         staffConflicts.forEach(staff => {
           conflicts.push({
             type: "staff_conflict",
-            description: `${staff} has multiple classes scheduled at ${slot}`,
+            description: `Staff ${staff} has multiple classes at ${slot}`,
             severity: "high"
           });
         });
@@ -466,7 +534,7 @@ class TimetableScheduler {
         classroomConflicts.forEach(classroom => {
           conflicts.push({
             type: "classroom_conflict",
-            description: `${classroom} has multiple classes scheduled at ${slot}`,
+            description: `Classroom ${classroom} has multiple classes at ${slot}`,
             severity: "high"
           });
         });
@@ -474,38 +542,52 @@ class TimetableScheduler {
         groupConflicts.forEach(group => {
           conflicts.push({
             type: "student_group_conflict",
-            description: `${group} has multiple classes scheduled at ${slot}`,
+            description: `Student group ${group} has multiple classes at ${slot}`,
             severity: "high"
           });
         });
       }
     });
 
-    // Additional validation for lab scheduling
-    this.validateLabScheduling(timetable, conflicts);
+    // Enhanced lab validation
+    this.validateLabSchedulingEnhanced(timetable, conflicts);
   }
 
-  private validateLabScheduling(timetable: TimetableEntry[], conflicts: Conflict[]): void {
+  private validateLabSchedulingEnhanced(timetable: TimetableEntry[], conflicts: Conflict[]): void {
     const labEntries = timetable.filter(entry => entry.type === "lab");
     
     labEntries.forEach(lab => {
-      // Check if lab has sufficient duration
+      // Validate lab duration
       if (!lab.duration || lab.duration < 2) {
         conflicts.push({
-          type: "lab_duration_warning",
-          description: `Lab ${lab.subject} may need longer duration than ${lab.duration || 1} period(s)`,
+          type: "insufficient_lab_duration",
+          description: `Lab ${lab.subject} has insufficient duration (${lab.duration || 1} periods). Minimum 2 periods required.`,
+          severity: "medium"
+        });
+      }
+
+      // Validate lab timing preferences
+      const isAfternoon = this.postLunchSlots.some(slot => lab.timeSlot.includes(slot.split('-')[0]));
+      if (!isAfternoon) {
+        conflicts.push({
+          type: "lab_timing_suboptimal",
+          description: `Lab ${lab.subject} scheduled in morning. Afternoon scheduling recommended.`,
           severity: "low"
         });
       }
 
-      // Check if lab is scheduled in appropriate time slots
-      const isInAfternoon = this.postLunchSlots.some(slot => lab.timeSlot.includes(slot));
-      if (!isInAfternoon && lab.type === "lab") {
-        conflicts.push({
-          type: "lab_timing_suggestion",
-          description: `Lab ${lab.subject} is scheduled in morning - consider afternoon scheduling`,
-          severity: "low"
-        });
+      // Validate consecutive periods for labs
+      if (lab.duration && lab.duration > 1) {
+        const [startTime] = lab.timeSlot.split('-');
+        const startIndex = this.timeSlots.findIndex(slot => slot.startsWith(startTime));
+        
+        if (startIndex === -1 || startIndex + lab.duration > this.timeSlots.length) {
+          conflicts.push({
+            type: "lab_period_continuity",
+            description: `Lab ${lab.subject} periods may not be continuous or exceed available time slots`,
+            severity: "medium"
+          });
+        }
       }
     });
   }

@@ -88,6 +88,10 @@ const AutoScheduleForm = ({ onGenerate, isGenerating, generatedTimetable, confli
     setActiveTab("conditions");
   };
 
+  const highSeverityConflicts = conflicts?.filter(c => c.severity === 'high') || [];
+  const mediumSeverityConflicts = conflicts?.filter(c => c.severity === 'medium') || [];
+  const lowSeverityConflicts = conflicts?.filter(c => c.severity === 'low') || [];
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -103,11 +107,40 @@ const AutoScheduleForm = ({ onGenerate, isGenerating, generatedTimetable, confli
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {/* New Timing Structure Info */}
+          <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+            <div className="flex items-center space-x-2 mb-3">
+              <Settings className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+              <span className="font-medium text-blue-800 dark:text-blue-200">Enhanced Validation System</span>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+              <div>
+                <div className="font-medium text-blue-800 dark:text-blue-200 mb-2">Pre-Scheduling Validation</div>
+                <div className="space-y-1 text-blue-700 dark:text-blue-300">
+                  <div>✓ Staff requirement validation</div>
+                  <div>✓ Classroom capacity & type checks</div>
+                  <div>✓ Subject-staff expertise matching</div>
+                  <div>✓ Tutor assignment validation</div>
+                </div>
+              </div>
+              <div>
+                <div className="font-medium text-blue-800 dark:text-blue-200 mb-2">Cross-Department Checks</div>
+                <div className="space-y-1 text-blue-700 dark:text-blue-300">
+                  <div>✓ Staff conflict prevention</div>
+                  <div>✓ Classroom sharing validation</div>
+                  <div>✓ Resource optimization</div>
+                  <div>✓ Lab consecutive period checks</div>
+                </div>
+              </div>
+            </div>
+            <p className="text-xs text-blue-700 dark:text-blue-300 mt-3">
+              Enhanced algorithm performs comprehensive background checks across all years, departments, and staff assignments before scheduling.
+            </p>
+          </div>
+
           <div className="mb-6 p-4 bg-accent/10 rounded-lg border border-accent/20">
             <div className="flex items-center space-x-2 mb-3">
               <Clock className="h-4 w-4 text-accent" />
-              <span className="font-medium text-foreground">New Timing Structure</span>
+              <span className="font-medium text-foreground">Updated Timing Structure</span>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
               <div>
@@ -370,7 +403,7 @@ const AutoScheduleForm = ({ onGenerate, isGenerating, generatedTimetable, confli
               <div className="flex items-center justify-between pt-4">
                 <div className="text-sm text-muted-foreground">
                   <p>Staff allocated: <Badge variant="outline">{staffData.length} members</Badge></p>
-                  <p className="mt-1">Enhanced algorithm with comprehensive background checks</p>
+                  <p className="mt-1">Enhanced algorithm with comprehensive validation</p>
                 </div>
                 
                 <Button
@@ -398,31 +431,83 @@ const AutoScheduleForm = ({ onGenerate, isGenerating, generatedTimetable, confli
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="mt-4 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg"
+              className="mt-4 space-y-3"
             >
-              <div className="flex items-center space-x-2 mb-2">
-                <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-                <span className="font-medium text-amber-800 dark:text-amber-200">Conflicts Detected</span>
-                <Badge variant="secondary" className="bg-amber-100 dark:bg-amber-800 text-amber-800 dark:text-amber-200">
-                  {conflicts.length}
-                </Badge>
-              </div>
-              <div className="space-y-1">
-                {conflicts.slice(0, 3).map((conflict, index) => (
-                  <p key={index} className="text-sm text-amber-700 dark:text-amber-300">
-                    • {typeof conflict === 'string' ? conflict : conflict.description || 'Unknown conflict'}
-                  </p>
-                ))}
-                {conflicts.length > 3 && (
-                  <p className="text-sm text-amber-600 dark:text-amber-400 italic">
-                    +{conflicts.length - 3} more conflicts...
-                  </p>
-                )}
-              </div>
+              {highSeverityConflicts.length > 0 && (
+                <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                  <div className="flex items-center space-x-2 mb-2">
+                    <AlertTriangle className="h-4 w-4 text-red-600 dark:text-red-400" />
+                    <span className="font-medium text-red-800 dark:text-red-200">Critical Issues</span>
+                    <Badge variant="destructive" className="bg-red-100 dark:bg-red-800 text-red-800 dark:text-red-200">
+                      {highSeverityConflicts.length}
+                    </Badge>
+                  </div>
+                  <div className="space-y-1">
+                    {highSeverityConflicts.slice(0, 3).map((conflict, index) => (
+                      <p key={index} className="text-sm text-red-700 dark:text-red-300">
+                        • {typeof conflict === 'string' ? conflict : conflict.description || 'Unknown conflict'}
+                      </p>
+                    ))}
+                    {highSeverityConflicts.length > 3 && (
+                      <p className="text-sm text-red-600 dark:text-red-400 italic">
+                        +{highSeverityConflicts.length - 3} more critical issues...
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {mediumSeverityConflicts.length > 0 && (
+                <div className="p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
+                  <div className="flex items-center space-x-2 mb-2">
+                    <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                    <span className="font-medium text-amber-800 dark:text-amber-200">Warnings</span>
+                    <Badge variant="secondary" className="bg-amber-100 dark:bg-amber-800 text-amber-800 dark:text-amber-200">
+                      {mediumSeverityConflicts.length}
+                    </Badge>
+                  </div>
+                  <div className="space-y-1">
+                    {mediumSeverityConflicts.slice(0, 2).map((conflict, index) => (
+                      <p key={index} className="text-sm text-amber-700 dark:text-amber-300">
+                        • {typeof conflict === 'string' ? conflict : conflict.description || 'Unknown conflict'}
+                      </p>
+                    ))}
+                    {mediumSeverityConflicts.length > 2 && (
+                      <p className="text-sm text-amber-600 dark:text-amber-400 italic">
+                        +{mediumSeverityConflicts.length - 2} more warnings...
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {lowSeverityConflicts.length > 0 && (
+                <div className="p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                  <div className="flex items-center space-x-2 mb-2">
+                    <CheckCircle className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                    <span className="font-medium text-blue-800 dark:text-blue-200">Suggestions</span>
+                    <Badge variant="outline" className="bg-blue-100 dark:bg-blue-800 text-blue-800 dark:text-blue-200">
+                      {lowSeverityConflicts.length}
+                    </Badge>
+                  </div>
+                  <div className="space-y-1">
+                    {lowSeverityConflicts.slice(0, 2).map((conflict, index) => (
+                      <p key={index} className="text-sm text-blue-700 dark:text-blue-300">
+                        • {typeof conflict === 'string' ? conflict : conflict.description || 'Unknown suggestion'}
+                      </p>
+                    ))}
+                    {lowSeverityConflicts.length > 2 && (
+                      <p className="text-sm text-blue-600 dark:text-blue-400 italic">
+                        +{lowSeverityConflicts.length - 2} more suggestions...
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
             </motion.div>
           )}
 
-          {generatedTimetable && (!conflicts || conflicts.length === 0) && (
+          {generatedTimetable && (!conflicts || conflicts.filter(c => c.severity === 'high').length === 0) && (
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -435,7 +520,7 @@ const AutoScheduleForm = ({ onGenerate, isGenerating, generatedTimetable, confli
                 </span>
               </div>
               <p className="text-sm text-green-700 dark:text-green-300 mt-1">
-                Optimized 6-period schedule created for {selectedDepartment} - {selectedYear} Year ({selectedSemester} semester) with enhanced lab scheduling
+                Optimized 6-period schedule created for {selectedDepartment} - {selectedYear} Year with enhanced validation
               </p>
             </motion.div>
           )}

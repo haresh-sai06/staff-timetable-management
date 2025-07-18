@@ -145,61 +145,61 @@ const TimetableGrid = ({ department, semester, viewMode, onAddClass }: Timetable
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
-            <div className="min-w-full">
-              {/* Header */}
-              <div className="grid grid-cols-8 gap-2 mb-4">
-                <div className="p-3 bg-accent/10 rounded-lg border border-border">
-                  <div className="font-medium text-foreground text-center">Time</div>
+          <div className="w-full overflow-x-auto">
+            <div className="min-w-[1200px]">
+              {/* Header - Fixed equal column widths */}
+              <div className="grid grid-cols-8 gap-1 mb-2">
+                <div className="h-16 p-2 bg-accent/10 rounded-lg border border-border flex items-center justify-center">
+                  <div className="font-medium text-foreground text-center text-sm">Time</div>
                 </div>
                 {days.map((day) => (
-                  <div key={day} className="p-3 bg-accent/10 rounded-lg border border-border">
-                    <div className="font-medium text-foreground text-center">{day}</div>
+                  <div key={day} className="h-16 p-2 bg-accent/10 rounded-lg border border-border flex items-center justify-center">
+                    <div className="font-medium text-foreground text-center text-sm">{day}</div>
                   </div>
                 ))}
               </div>
 
-              {/* Time slots */}
+              {/* Time slots - Equal column widths with fixed height */}
               {timeSlots.map((slot, index) => (
                 <motion.div
                   key={slot.time}
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: index * 0.1 }}
-                  className={`grid grid-cols-8 gap-2 mb-2 ${slot.isBreak ? 'opacity-60' : ''}`}
+                  className={`grid grid-cols-8 gap-1 mb-1 ${slot.isBreak ? 'opacity-60' : ''}`}
                 >
-                  {/* Time column */}
-                  <div className={`p-4 rounded-lg border border-border ${
+                  {/* Time column - Fixed width and height */}
+                  <div className={`h-24 p-2 rounded-lg border border-border flex flex-col justify-center ${
                     slot.isBreak 
                       ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800' 
                       : 'bg-card/50'
                   }`}>
-                    <div className="text-sm font-medium text-foreground">
+                    <div className="text-xs font-medium text-foreground text-center">
                       {slot.label}
                     </div>
-                    <div className="text-xs text-muted-foreground mt-1">
+                    <div className="text-xs text-muted-foreground text-center mt-1">
                       {slot.time}
                     </div>
                     {slot.period && (
-                      <Badge variant="outline" className="mt-1 text-xs">
+                      <Badge variant="outline" className="mt-1 text-xs mx-auto">
                         55 min
                       </Badge>
                     )}
                   </div>
 
-                  {/* Day columns */}
+                  {/* Day columns - Fixed equal width and height */}
                   {!slot.isBreak ? days.map((day) => {
                     const entry = getEntryForSlot(day, slot.time);
                     
                     return (
-                      <div key={`${day}-${slot.time}`} className="min-h-[100px]">
+                      <div key={`${day}-${slot.time}`} className="h-24 w-full">
                         {entry ? (
-                          <div className={`p-3 rounded-lg border h-full ${
+                          <div className={`p-2 rounded-lg border h-full w-full ${
                             entry.type === 'lab' 
                               ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800'
                               : 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800'
-                          } ${entry.hasConflict ? 'ring-2 ring-red-500' : ''}`}>
-                            <div className="space-y-2">
+                          } ${entry.hasConflict ? 'ring-1 ring-red-500' : ''}`}>
+                            <div className="space-y-1 h-full flex flex-col justify-between">
                               <div className="flex items-center justify-between">
                                 <Badge 
                                   variant={entry.type === 'lab' ? 'default' : 'secondary'}
@@ -210,13 +210,13 @@ const TimetableGrid = ({ department, semester, viewMode, onAddClass }: Timetable
                                 </Badge>
                                 {entry.hasConflict && (
                                   <Badge variant="destructive" className="text-xs">
-                                    Conflict
+                                    !
                                   </Badge>
                                 )}
                               </div>
                               
-                              <div>
-                                <div className="font-medium text-foreground text-sm line-clamp-2">
+                              <div className="flex-1">
+                                <div className="font-medium text-foreground text-xs line-clamp-1">
                                   {entry.subject}
                                 </div>
                                 <div className="text-xs text-muted-foreground">
@@ -224,42 +224,38 @@ const TimetableGrid = ({ department, semester, viewMode, onAddClass }: Timetable
                                 </div>
                               </div>
 
-                              <div className="space-y-1 text-xs text-foreground">
+                              <div className="space-y-0.5 text-xs text-foreground">
                                 <div className="flex items-center space-x-1">
-                                  <User className="h-3 w-3" />
-                                  <span className="truncate">{entry.staff}</span>
+                                  <User className="h-2.5 w-2.5" />
+                                  <span className="truncate text-xs">{entry.staff.split(' ')[0]}</span>
                                 </div>
                                 <div className="flex items-center space-x-1">
-                                  <MapPin className="h-3 w-3" />
-                                  <span>{entry.classroom}</span>
-                                </div>
-                                <div className="flex items-center space-x-1">
-                                  <Book className="h-3 w-3" />
-                                  <span>{entry.studentGroup}</span>
+                                  <MapPin className="h-2.5 w-2.5" />
+                                  <span className="text-xs">{entry.classroom}</span>
                                 </div>
                               </div>
                             </div>
                           </div>
                         ) : (
-                          <div className="h-full border-2 border-dashed border-border rounded-lg flex items-center justify-center bg-card/20 hover:bg-card/40 transition-colors group cursor-pointer"
+                          <div className="h-full w-full border border-dashed border-border rounded-lg flex items-center justify-center bg-card/20 hover:bg-card/40 transition-colors group cursor-pointer"
                                onClick={() => handleAddClass(day, slot.time)}>
                             <Button 
                               variant="ghost" 
                               size="sm" 
-                              className="opacity-0 group-hover:opacity-100 transition-opacity"
+                              className="opacity-0 group-hover:opacity-100 transition-opacity text-xs p-1 h-6"
                             >
-                              <Plus className="h-4 w-4 mr-1" />
-                              Add Class
+                              <Plus className="h-3 w-3 mr-1" />
+                              Add
                             </Button>
                           </div>
                         )}
                       </div>
                     );
                   }) : (
-                    // For break slots, show break info across all days
+                    // For break slots, show break info across all days with equal spacing
                     days.map((day) => (
-                      <div key={`${day}-${slot.time}`} className="p-4 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 flex items-center justify-center">
-                        <span className="text-sm text-amber-700 dark:text-amber-300 font-medium">
+                      <div key={`${day}-${slot.time}`} className="h-24 w-full p-2 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 flex items-center justify-center">
+                        <span className="text-xs text-amber-700 dark:text-amber-300 font-medium text-center">
                           {slot.label}
                         </span>
                       </div>
