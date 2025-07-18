@@ -32,6 +32,7 @@ const TimetableView = () => {
   const [generatedTimetable, setGeneratedTimetable] = useState(null);
   const [schedulingConflicts, setSchedulingConflicts] = useState([]);
   const [addClassContext, setAddClassContext] = useState({ day: "", timeSlot: "" });
+  const [editClassContext, setEditClassContext] = useState({ entryId: "", isOpen: false });
 
   useEffect(() => {
     const role = localStorage.getItem("userRole");
@@ -184,8 +185,8 @@ const TimetableView = () => {
   };
 
   const handleEditClassFromGrid = (entryId: string) => {
-    console.log("Editing class entry:", entryId);
-    // TODO: Implement edit functionality - could open a modal with pre-filled data
+    console.log("Opening edit modal for entry:", entryId);
+    setEditClassContext({ entryId, isOpen: true });
   };
 
   const handleDeleteClassFromGrid = (entryId: string) => {
@@ -373,6 +374,13 @@ const TimetableView = () => {
         department={selectedDepartment}
         day={addClassContext.day}
         timeSlot={addClassContext.timeSlot}
+      />
+
+      <EditClassModal
+        isOpen={editClassContext.isOpen}
+        onClose={() => setEditClassContext({ entryId: "", isOpen: false })}
+        entryId={editClassContext.entryId}
+        department={selectedDepartment}
       />
     </div>
   );
