@@ -1,3 +1,4 @@
+
 export interface Subject {
   id: string;
   name: string;
@@ -83,7 +84,7 @@ class TimetableScheduler {
   private preLunchSlots = ["09:15-10:10", "10:10-11:05", "11:20-12:15"];
   private postLunchSlots = ["13:00-13:55", "13:55-14:50", "14:50-15:45"];
 
-  generateTimetable(
+  async generateTimetable(
     subjects: Subject[],
     staff: Staff[],
     classrooms: Classroom[],
@@ -91,19 +92,23 @@ class TimetableScheduler {
     department: string,
     year: string,
     semester: string
-  ): ScheduleResult {
+  ): Promise<ScheduleResult> {
     const timetable: TimetableEntry[] = [];
     const conflicts: Conflict[] = [];
 
     try {
       // Enhanced pre-scheduling validation
-      const { enhancedValidator } = await import("./enhancedTimetableValidator");
-      const validationResult = enhancedValidator.validatePreSchedulingRequirements(
-        subjects, staff, classrooms, studentGroups, department, year, semester
-      );
+      try {
+        const { enhancedValidator } = await import("./enhancedTimetableValidator");
+        const validationResult = enhancedValidator.validatePreSchedulingRequirements(
+          subjects, staff, classrooms, studentGroups, department, year, semester
+        );
 
-      // Add validation conflicts
-      conflicts.push(...validationResult.conflicts);
+        // Add validation conflicts
+        conflicts.push(...validationResult.conflicts);
+      } catch (error) {
+        console.warn("Enhanced validation module not available, using basic validation");
+      }
 
       // If there are high-severity conflicts, don't proceed with scheduling
       const highSeverityConflicts = conflicts.filter(c => c.severity === 'high');
