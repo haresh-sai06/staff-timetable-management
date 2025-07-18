@@ -1,16 +1,28 @@
 
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Plus, Clock, MapPin, User, Book } from "lucide-react";
+import { Plus, Clock, MapPin, User, Book, Edit2, Trash2, X } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface TimetableGridProps {
   department: string;
   semester: string;
   viewMode: string;
   onAddClass?: (day: string, timeSlot: string) => void;
+  onEditClass?: (entryId: string) => void;
+  onDeleteClass?: (entryId: string) => void;
 }
 
 interface TimetableEntry {
@@ -29,9 +41,21 @@ interface TimetableEntry {
   conflictType?: string;
 }
 
-const TimetableGrid = ({ department, semester, viewMode, onAddClass }: TimetableGridProps) => {
+const TimetableGrid = ({ 
+  department, 
+  semester, 
+  viewMode, 
+  onAddClass,
+  onEditClass,
+  onDeleteClass 
+}: TimetableGridProps) => {
   const [timetableData, setTimetableData] = useState<TimetableEntry[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [userRole, setUserRole] = useState("");
+  const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; entryId: string }>({
+    open: false,
+    entryId: ""
+  });
 
   // Updated timing structure - 6 periods of 55 minutes each
   const timeSlots = [
@@ -77,6 +101,11 @@ const TimetableGrid = ({ department, semester, viewMode, onAddClass }: Timetable
   ];
 
   useEffect(() => {
+    const role = localStorage.getItem("userRole");
+    setUserRole(role || "");
+  }, []);
+
+  useEffect(() => {
     setIsLoading(true);
     // Simulate API call
     setTimeout(() => {
@@ -109,6 +138,22 @@ const TimetableGrid = ({ department, semester, viewMode, onAddClass }: Timetable
       onAddClass(day, timeSlot);
     }
   };
+
+  const handleEditClass = (entryId: string) => {
+    if (onEditClass) {
+      onEditClass(entryId);
+    }
+  };
+
+  const handleDeleteConfirm = () => {
+    if (onDeleteClass && deleteDialog.entryId) {
+      onDeleteClass(deleteDialog.entryId);
+      setTimetableData(prev => prev.filter(entry => entry.id !== deleteDialog.entryId));
+    }
+    setDeleteDialog({ open: false, entryId: "" });
+  };
+
+  const isAdmin = userRole === "admin";
 
   if (isLoading) {
     return (
@@ -146,42 +191,42 @@ const TimetableGrid = ({ department, semester, viewMode, onAddClass }: Timetable
         </CardHeader>
         <CardContent>
           <div className="w-full overflow-x-auto">
-            <div className="min-w-[1200px]">
+            <div className="min-w-[1400px]">
               {/* Header - Fixed equal column widths */}
-              <div className="grid grid-cols-8 gap-1 mb-2">
-                <div className="h-16 p-2 bg-accent/10 rounded-lg border border-border flex items-center justify-center">
-                  <div className="font-medium text-foreground text-center text-sm">Time</div>
+              <div className="grid grid-cols-8 gap-2 mb-3">
+                <div className="h-16 p-3 bg-accent/10 rounded-lg border border-border flex items-center justify-center">
+                  <div className="font-semibold text-foreground text-center text-sm">Time</div>
                 </div>
                 {days.map((day) => (
-                  <div key={day} className="h-16 p-2 bg-accent/10 rounded-lg border border-border flex items-center justify-center">
-                    <div className="font-medium text-foreground text-center text-sm">{day}</div>
+                  <div key={day} className="h-16 p-3 bg-accent/10 rounded-lg border border-border flex items-center justify-center">
+                    <div className="font-semibold text-foreground text-center text-sm">{day}</div>
                   </div>
                 ))}
               </div>
 
-              {/* Time slots - Equal column widths with fixed height */}
+              {/* Time slots - Equal column widths with consistent height */}
               {timeSlots.map((slot, index) => (
                 <motion.div
                   key={slot.time}
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: index * 0.1 }}
-                  className={`grid grid-cols-8 gap-1 mb-1 ${slot.isBreak ? 'opacity-60' : ''}`}
+                  className={`grid grid-cols-8 gap-2 mb-2 ${slot.isBreak ? 'opacity-70' : ''}`}
                 >
                   {/* Time column - Fixed width and height */}
-                  <div className={`h-24 p-2 rounded-lg border border-border flex flex-col justify-center ${
+                  <div className={`h-28 p-3 rounded-lg border border-border flex flex-col justify-center items-center ${
                     slot.isBreak 
                       ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800' 
                       : 'bg-card/50'
                   }`}>
-                    <div className="text-xs font-medium text-foreground text-center">
+                    <div className="text-sm font-semibold text-foreground text-center">
                       {slot.label}
                     </div>
                     <div className="text-xs text-muted-foreground text-center mt-1">
                       {slot.time}
                     </div>
                     {slot.period && (
-                      <Badge variant="outline" className="mt-1 text-xs mx-auto">
+                      <Badge variant="outline" className="mt-2 text-xs">
                         55 min
                       </Badge>
                     )}
@@ -192,14 +237,37 @@ const TimetableGrid = ({ department, semester, viewMode, onAddClass }: Timetable
                     const entry = getEntryForSlot(day, slot.time);
                     
                     return (
-                      <div key={`${day}-${slot.time}`} className="h-24 w-full">
+                      <div key={`${day}-${slot.time}`} className="h-28 w-full">
                         {entry ? (
-                          <div className={`p-2 rounded-lg border h-full w-full ${
+                          <div className={`relative group p-3 rounded-lg border h-full w-full overflow-hidden ${
                             entry.type === 'lab' 
                               ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800'
                               : 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800'
-                          } ${entry.hasConflict ? 'ring-1 ring-red-500' : ''}`}>
-                            <div className="space-y-1 h-full flex flex-col justify-between">
+                          } ${entry.hasConflict ? 'ring-2 ring-red-500' : ''}`}>
+                            
+                            {/* Admin Actions - Show on hover */}
+                            {isAdmin && (
+                              <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity flex space-x-1 z-10">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-6 w-6 p-0 bg-white/80 hover:bg-white"
+                                  onClick={() => handleEditClass(entry.id)}
+                                >
+                                  <Edit2 className="h-3 w-3" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-6 w-6 p-0 bg-white/80 hover:bg-red-100"
+                                  onClick={() => setDeleteDialog({ open: true, entryId: entry.id })}
+                                >
+                                  <Trash2 className="h-3 w-3 text-red-600" />
+                                </Button>
+                              </div>
+                            )}
+
+                            <div className="space-y-1 h-full flex flex-col">
                               <div className="flex items-center justify-between">
                                 <Badge 
                                   variant={entry.type === 'lab' ? 'default' : 'secondary'}
@@ -215,22 +283,22 @@ const TimetableGrid = ({ department, semester, viewMode, onAddClass }: Timetable
                                 )}
                               </div>
                               
-                              <div className="flex-1">
-                                <div className="font-medium text-foreground text-xs line-clamp-1">
+                              <div className="flex-1 min-h-0">
+                                <div className="font-semibold text-foreground text-xs leading-tight mb-1 line-clamp-1">
                                   {entry.subject}
                                 </div>
-                                <div className="text-xs text-muted-foreground">
+                                <div className="text-xs text-muted-foreground mb-1">
                                   {entry.subjectCode}
                                 </div>
                               </div>
 
-                              <div className="space-y-0.5 text-xs text-foreground">
+                              <div className="space-y-1 text-xs text-foreground">
                                 <div className="flex items-center space-x-1">
-                                  <User className="h-2.5 w-2.5" />
-                                  <span className="truncate text-xs">{entry.staff.split(' ')[0]}</span>
+                                  <User className="h-2.5 w-2.5 flex-shrink-0" />
+                                  <span className="truncate text-xs">{entry.staff.split(' ')[0]} {entry.staff.split(' ')[1]?.[0]}.</span>
                                 </div>
                                 <div className="flex items-center space-x-1">
-                                  <MapPin className="h-2.5 w-2.5" />
+                                  <MapPin className="h-2.5 w-2.5 flex-shrink-0" />
                                   <span className="text-xs">{entry.classroom}</span>
                                 </div>
                               </div>
@@ -239,14 +307,16 @@ const TimetableGrid = ({ department, semester, viewMode, onAddClass }: Timetable
                         ) : (
                           <div className="h-full w-full border border-dashed border-border rounded-lg flex items-center justify-center bg-card/20 hover:bg-card/40 transition-colors group cursor-pointer"
                                onClick={() => handleAddClass(day, slot.time)}>
-                            <Button 
-                              variant="ghost" 
-                              size="sm" 
-                              className="opacity-0 group-hover:opacity-100 transition-opacity text-xs p-1 h-6"
-                            >
-                              <Plus className="h-3 w-3 mr-1" />
-                              Add
-                            </Button>
+                            {isAdmin && (
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="opacity-0 group-hover:opacity-100 transition-opacity text-xs p-2 h-8"
+                              >
+                                <Plus className="h-3 w-3 mr-1" />
+                                Add
+                              </Button>
+                            )}
                           </div>
                         )}
                       </div>
@@ -254,8 +324,8 @@ const TimetableGrid = ({ department, semester, viewMode, onAddClass }: Timetable
                   }) : (
                     // For break slots, show break info across all days with equal spacing
                     days.map((day) => (
-                      <div key={`${day}-${slot.time}`} className="h-24 w-full p-2 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 flex items-center justify-center">
-                        <span className="text-xs text-amber-700 dark:text-amber-300 font-medium text-center">
+                      <div key={`${day}-${slot.time}`} className="h-28 w-full p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 flex items-center justify-center">
+                        <span className="text-sm text-amber-700 dark:text-amber-300 font-medium text-center">
                           {slot.label}
                         </span>
                       </div>
@@ -285,6 +355,24 @@ const TimetableGrid = ({ department, semester, viewMode, onAddClass }: Timetable
           </div>
         </CardContent>
       </Card>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialog.open} onOpenChange={(open) => setDeleteDialog({ ...deleteDialog, open })}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Class Entry</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this class entry? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteConfirm} className="bg-red-600 hover:bg-red-700">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </motion.div>
   );
 };

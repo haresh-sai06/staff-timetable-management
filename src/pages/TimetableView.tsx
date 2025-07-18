@@ -183,6 +183,16 @@ const TimetableView = () => {
     setShowAddClassModal(true);
   };
 
+  const handleEditClassFromGrid = (entryId: string) => {
+    console.log("Editing class entry:", entryId);
+    // TODO: Implement edit functionality - could open a modal with pre-filled data
+  };
+
+  const handleDeleteClassFromGrid = (entryId: string) => {
+    console.log("Deleting class entry:", entryId);
+    // TODO: Implement actual deletion logic with database call
+  };
+
   return (
     <div className="min-h-screen">
       <Navigation />
@@ -310,6 +320,8 @@ const TimetableView = () => {
                 semester={selectedSemester}
                 viewMode={viewMode}
                 onAddClass={handleAddClassFromGrid}
+                onEditClass={handleEditClassFromGrid}
+                onDeleteClass={handleDeleteClassFromGrid}
               />
             </motion.div>
           </TabsContent>
