@@ -124,8 +124,8 @@ const TimetableView = () => {
     
     // Use provided staff data or mock data for demo
     const mockStaff = staffData && staffData.length > 0 ? staffData : [
-      { id: "1", name: "Dr. Priya Sharma", role: "AsstProf" as const, department, maxHours: 18, currentHours: 12 },
-      { id: "2", name: "Prof. Rajesh Kumar", role: "Prof" as const, department, maxHours: 12, currentHours: 8 },
+      { id: "1", name: "Dr. Priya Sharma", role: "AsstProf" as const, department, max_hours: 18, current_hours: 12 },
+      { id: "2", name: "Prof. Rajesh Kumar", role: "Prof" as const, department, max_hours: 12, current_hours: 8 },
     ];
 
     const mockSubjects = [
@@ -146,7 +146,7 @@ const TimetableView = () => {
     setTimeout(async () => {
       try {
         const { timetableScheduler } = await import("../utils/timetableScheduler");
-        const result = timetableScheduler.generateTimetable(
+        const result = await timetableScheduler.generateTimetable(
           mockSubjects,
           mockStaff,
           mockClassrooms,
