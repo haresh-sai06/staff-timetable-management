@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Calendar, Play, RefreshCw, CheckCircle, AlertTriangle, Settings, Users } from "lucide-react";
+import { Calendar, Play, RefreshCw, CheckCircle, AlertTriangle, Settings, Users, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -25,7 +25,9 @@ interface SchedulingConditions {
   preferExperiencedStaff: boolean;
   minimizeRoomChanges: boolean;
   timePreference: "morning" | "afternoon" | "balanced";
-  labDuration: "single" | "double";
+  labDuration: "double" | "triple";
+  enhancedLabScheduling: boolean;
+  crossDepartmentCheck: boolean;
 }
 
 const AutoScheduleForm = ({ onGenerate, isGenerating, generatedTimetable, conflicts }: AutoScheduleFormProps) => {
@@ -44,7 +46,9 @@ const AutoScheduleForm = ({ onGenerate, isGenerating, generatedTimetable, confli
     preferExperiencedStaff: false,
     minimizeRoomChanges: true,
     timePreference: "balanced",
-    labDuration: "double"
+    labDuration: "double",
+    enhancedLabScheduling: true,
+    crossDepartmentCheck: true
   });
 
   const departments = [
@@ -94,19 +98,47 @@ const AutoScheduleForm = ({ onGenerate, isGenerating, generatedTimetable, confli
         <CardHeader>
           <CardTitle className="flex items-center space-x-2 text-foreground">
             <Calendar className="h-5 w-5 text-accent" />
-            <span>Automated Timetable Generator</span>
+            <span>Enhanced Automated Timetable Generator</span>
+            <Badge variant="outline" className="ml-2">6 Periods × 55 Minutes</Badge>
           </CardTitle>
         </CardHeader>
         <CardContent>
+          {/* New Timing Structure Info */}
+          <div className="mb-6 p-4 bg-accent/10 rounded-lg border border-accent/20">
+            <div className="flex items-center space-x-2 mb-3">
+              <Clock className="h-4 w-4 text-accent" />
+              <span className="font-medium text-foreground">New Timing Structure</span>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+              <div>
+                <div className="font-medium text-foreground mb-2">Pre-Lunch (3 Periods)</div>
+                <div className="space-y-1 text-muted-foreground">
+                  <div>Period 1: 9:15 - 10:10 AM</div>
+                  <div>Period 2: 10:10 - 11:05 AM</div>
+                  <div className="text-amber-600">Break: 11:05 - 11:20 AM</div>
+                  <div>Period 3: 11:20 AM - 12:15 PM</div>
+                </div>
+              </div>
+              <div>
+                <div className="font-medium text-foreground mb-2">Post-Lunch (3 Periods)</div>
+                <div className="space-y-1 text-muted-foreground">
+                  <div className="text-amber-600">Lunch: 12:15 - 1:00 PM</div>
+                  <div>Period 4: 1:00 - 1:55 PM</div>
+                  <div>Period 5: 1:55 - 2:50 PM</div>
+                  <div>Period 6: 2:50 - 3:45 PM</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="basic">Basic Setup</TabsTrigger>
               <TabsTrigger value="staff" disabled={!selectedDepartment}>Staff Allocation</TabsTrigger>
-              <TabsTrigger value="conditions" disabled={staffData.length === 0}>Conditions</TabsTrigger>
+              <TabsTrigger value="conditions" disabled={staffData.length === 0}>Enhanced Conditions</TabsTrigger>
             </TabsList>
 
             <TabsContent value="basic" className="space-y-6 mt-6">
-              {/* Basic Selection */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-foreground">Department</label>
@@ -178,7 +210,34 @@ const AutoScheduleForm = ({ onGenerate, isGenerating, generatedTimetable, confli
             </TabsContent>
 
             <TabsContent value="conditions" className="space-y-6 mt-6">
-              {/* Advanced Conditions Toggle */}
+              <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                <div className="flex items-center space-x-2 mb-3">
+                  <Calendar className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                  <span className="font-medium text-blue-800 dark:text-blue-200">Enhanced Lab Scheduling</span>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="enhanced-lab" className="text-sm">Enhanced Lab Background Check</Label>
+                    <Switch
+                      id="enhanced-lab"
+                      checked={conditions.enhancedLabScheduling}
+                      onCheckedChange={(value) => updateCondition('enhancedLabScheduling', value)}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="cross-dept-check" className="text-sm">Cross-Department Validation</Label>
+                    <Switch
+                      id="cross-dept-check"
+                      checked={conditions.crossDepartmentCheck}
+                      onCheckedChange={(value) => updateCondition('crossDepartmentCheck', value)}
+                    />
+                  </div>
+                </div>
+                <p className="text-xs text-blue-700 dark:text-blue-300 mt-2">
+                  Enhanced scheduling performs comprehensive background checks across all years, departments, and staff assignments before lab allocation.
+                </p>
+              </div>
+
               <div className="flex items-center justify-between border-t border-border pt-4">
                 <div className="flex items-center space-x-2">
                   <Settings className="h-4 w-4 text-muted-foreground" />
@@ -203,7 +262,6 @@ const AutoScheduleForm = ({ onGenerate, isGenerating, generatedTimetable, confli
                   <h4 className="font-medium text-foreground mb-3">Scheduling Preferences</h4>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* Time Preferences */}
                     <div className="space-y-3">
                       <div className="flex items-center justify-between">
                         <Label htmlFor="prioritize-labs" className="text-sm">Prioritize Labs in Afternoon</Label>
@@ -241,7 +299,6 @@ const AutoScheduleForm = ({ onGenerate, isGenerating, generatedTimetable, confli
                       </div>
                     </div>
 
-                    {/* Workload & Staff Preferences */}
                     <div className="space-y-3">
                       <div className="flex items-center justify-between">
                         <Label htmlFor="balance-workload" className="text-sm">Balance Staff Workload</Label>
@@ -295,14 +352,14 @@ const AutoScheduleForm = ({ onGenerate, isGenerating, generatedTimetable, confli
                       <Label className="text-sm">Lab Duration</Label>
                       <Select
                         value={conditions.labDuration}
-                        onValueChange={(value: "single" | "double") => updateCondition('labDuration', value)}
+                        onValueChange={(value: "double" | "triple") => updateCondition('labDuration', value)}
                       >
                         <SelectTrigger className="bg-card/80 border-border">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="single">Single Period (1 hour)</SelectItem>
-                          <SelectItem value="double">Double Period (2 hours)</SelectItem>
+                          <SelectItem value="double">Double Period (2 × 55 min)</SelectItem>
+                          <SelectItem value="triple">Triple Period (3 × 55 min)</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -310,11 +367,10 @@ const AutoScheduleForm = ({ onGenerate, isGenerating, generatedTimetable, confli
                 </motion.div>
               )}
 
-              {/* Generate Button and Info */}
               <div className="flex items-center justify-between pt-4">
                 <div className="text-sm text-muted-foreground">
                   <p>Staff allocated: <Badge variant="outline">{staffData.length} members</Badge></p>
-                  <p className="mt-1">Ready to generate optimized timetable</p>
+                  <p className="mt-1">Enhanced algorithm with comprehensive background checks</p>
                 </div>
                 
                 <Button
@@ -330,7 +386,7 @@ const AutoScheduleForm = ({ onGenerate, isGenerating, generatedTimetable, confli
                   ) : (
                     <>
                       <Play className="h-4 w-4 mr-2" />
-                      Generate
+                      Generate Enhanced
                     </>
                   )}
                 </Button>
@@ -375,11 +431,11 @@ const AutoScheduleForm = ({ onGenerate, isGenerating, generatedTimetable, confli
               <div className="flex items-center space-x-2">
                 <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
                 <span className="font-medium text-green-800 dark:text-green-200">
-                  Timetable Generated Successfully
+                  Enhanced Timetable Generated Successfully
                 </span>
               </div>
               <p className="text-sm text-green-700 dark:text-green-300 mt-1">
-                Conflict-free schedule created for {selectedDepartment} - {selectedYear} Year ({selectedSemester} semester)
+                Optimized 6-period schedule created for {selectedDepartment} - {selectedYear} Year ({selectedSemester} semester) with enhanced lab scheduling
               </p>
             </motion.div>
           )}
