@@ -20,9 +20,9 @@ interface TutorAssignmentModalProps {
 interface Classroom {
   id: string;
   name: string;
-  department: string;
   capacity: number;
   type: string;
+  is_active: boolean;
 }
 
 interface TutorAssignment {
@@ -31,6 +31,7 @@ interface TutorAssignment {
   academic_year: string;
   semester: string;
   is_active: boolean;
+  department: string;
 }
 
 const TutorAssignmentModal = ({ staffId, staffName, department, isOpen, onClose, onSuccess }: TutorAssignmentModalProps) => {
@@ -53,16 +54,31 @@ const TutorAssignmentModal = ({ staffId, staffName, department, isOpen, onClose,
   }, [isOpen, department]);
 
   const fetchClassrooms = async () => {
+    setLoading(true);
     try {
       const { data, error } = await supabase
         .from('classrooms')
-        .select('*')
-        .eq('department', department)
+        .select('id, name, capacity, type, is_active')
         .eq('is_active', true)
         .order('name');
 
       if (error) throw error;
-      setClassrooms(data || []);
+
+      // Filter out classrooms with empty or null names
+      const validClassrooms = (data || []).filter(
+        classroom => classroom.name && classroom.name.trim() !== ""
+      );
+
+      if (validClassrooms.length !== (data || []).length) {
+        console.warn("Some classrooms were filtered out due to empty or invalid names:", data);
+        toast({
+          title: "Warning",
+          description: "Some classrooms have invalid names and were excluded.",
+          variant: "default",
+        });
+      }
+
+      setClassrooms(validClassrooms);
     } catch (error: any) {
       console.error('Error fetching classrooms:', error);
       toast({
@@ -70,6 +86,8 @@ const TutorAssignmentModal = ({ staffId, staffName, department, isOpen, onClose,
         description: "Failed to fetch classrooms",
         variant: "destructive",
       });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -77,14 +95,34 @@ const TutorAssignmentModal = ({ staffId, staffName, department, isOpen, onClose,
     try {
       const { data, error } = await supabase
         .from('tutor_assignments')
-        .select('*')
+        .select('id, classroom, academic_year, semester, is_active, department')
         .eq('staff_id', staffId)
         .eq('is_active', true);
 
       if (error) throw error;
-      setExistingAssignments(data || []);
+
+      // Filter out assignments with empty or null classroom names
+      const validAssignments = (data || []).filter(
+        assignment => assignment.classroom && assignment.classroom.trim() !== ""
+      );
+
+      if (validAssignments.length !== (data || []).length) {
+        console.warn("Some assignments were filtered out due to empty or invalid classroom names:", data);
+        toast({
+          title: "Warning",
+          description: "Some assignments have invalid classroom names and were excluded.",
+          variant: "default",
+        });
+      }
+
+      setExistingAssignments(validAssignments);
     } catch (error: any) {
       console.error('Error fetching existing assignments:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch existing assignments",
+        variant: "destructive",
+      });
     }
   };
 
@@ -100,6 +138,11 @@ const TutorAssignmentModal = ({ staffId, staffName, department, isOpen, onClose,
 
     setLoading(true);
     try {
+      const classroom = classrooms.find(c => c.name === selectedClassroom);
+      if (!classroom) {
+        throw new Error("Selected classroom not found");
+      }
+
       const { error } = await supabase
         .from('tutor_assignments')
         .insert({
@@ -108,7 +151,8 @@ const TutorAssignmentModal = ({ staffId, staffName, department, isOpen, onClose,
           department,
           academic_year: academicYear,
           semester,
-          assigned_by: (await supabase.auth.getUser()).data.user?.id
+          assigned_by: (await supabase.auth.getUser()).data.user?.id,
+          is_active: true
         });
 
       if (error) throw error;
@@ -181,7 +225,6 @@ const TutorAssignmentModal = ({ staffId, staffName, department, isOpen, onClose,
           </CardHeader>
           
           <CardContent className="space-y-6">
-            {/* Existing Assignments */}
             {existingAssignments.length > 0 && (
               <div className="space-y-3">
                 <Label className="text-sm font-medium">Current Assignments</Label>
@@ -211,7 +254,6 @@ const TutorAssignmentModal = ({ staffId, staffName, department, isOpen, onClose,
               </div>
             )}
 
-            {/* New Assignment Form */}
             <div className="space-y-4 border-t pt-4">
               <Label className="text-sm font-medium">Assign New Classroom</Label>
               
@@ -256,11 +298,17 @@ const TutorAssignmentModal = ({ staffId, staffName, department, isOpen, onClose,
                     <SelectValue placeholder="Select a classroom" />
                   </SelectTrigger>
                   <SelectContent>
-                    {classrooms.map((classroom) => (
-                      <SelectItem key={classroom.id} value={classroom.name}>
-                        {classroom.name} - {classroom.type} (Capacity: {classroom.capacity})
-                      </SelectItem>
-                    ))}
+                    {classrooms.length === 0 ? (
+                      <div className="text-sm text-muted-foreground p-2">
+                        No valid classrooms available
+                      </div>
+                    ) : (
+                      classrooms.map((classroom) => (
+                        <SelectItem key={classroom.id} value={classroom.name}>
+                          {classroom.name} - {classroom.type} (Capacity: {classroom.capacity})
+                        </SelectItem>
+                      ))
+                    )}
                   </SelectContent>
                 </Select>
               </div>

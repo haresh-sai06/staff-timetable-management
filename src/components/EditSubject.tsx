@@ -19,18 +19,23 @@ interface EditSubjectProps {
 
 const EditSubject = ({ subject, onClose, onSave }: EditSubjectProps) => {
   const [formData, setFormData] = useState<Tables<"subjects">>({
-    id: subject.id,
-    name: subject.name,
-    code: subject.code,
-    department: subject.department,
-    credits: subject.credits,
-    is_active: subject.is_active,
+    id: subject?.id || crypto.randomUUID(),
+    name: subject?.name || "",
+    code: subject?.code || "",
+    department: subject?.department || "CSE",
+    credits: subject?.credits || 3,
+    type: subject?.type || null,
+    lab_duration: subject?.lab_duration || null,
+    year: subject?.year || null,
+    is_active: subject?.is_active ?? true,
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const departments = ["CSE", "ECE", "MECH", "CIVIL", "EEE"];
+  const subjectTypes = ["lecture", "lab", "seminar"];
+  const years = [1, 2, 3, 4];
 
-  const handleInputChange = (field: keyof Tables<"subjects">, value: string | number | boolean) => {
+  const handleInputChange = (field: keyof Tables<"subjects">, value: string | number | boolean | null) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
@@ -55,6 +60,9 @@ const EditSubject = ({ subject, onClose, onSave }: EditSubjectProps) => {
           code: formData.code,
           department: formData.department,
           credits: formData.credits,
+          type: formData.type,
+          lab_duration: formData.lab_duration,
+          year: formData.year,
           is_active: formData.is_active,
         })
         .eq('id', formData.id);
@@ -149,6 +157,56 @@ const EditSubject = ({ subject, onClose, onSave }: EditSubjectProps) => {
                     required
                     className="bg-card/80 border-border"
                   />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="type" className="text-foreground">Type</Label>
+                  <Select
+                    value={formData.type || ""}
+                    onValueChange={(value) => handleInputChange("type", value || null)}
+                  >
+                    <SelectTrigger className="bg-card/80 border-border">
+                      <SelectValue placeholder="Select type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">None</SelectItem>
+                      {subjectTypes.map((type) => (
+                        <SelectItem key={type} value={type}>
+                          {type.charAt(0).toUpperCase() + type.slice(1)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="lab_duration" className="text-foreground">Lab Duration (hours)</Label>
+                  <Input
+                    id="lab_duration"
+                    type="number"
+                    value={formData.lab_duration || ""}
+                    onChange={(e) => handleInputChange("lab_duration", e.target.value ? parseInt(e.target.value) : null)}
+                    min="0"
+                    max="10"
+                    className="bg-card/80 border-border"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="year" className="text-foreground">Year</Label>
+                  <Select
+                    value={formData.year?.toString() || ""}
+                    onValueChange={(value) => handleInputChange("year", value ? parseInt(value) : null)}
+                  >
+                    <SelectTrigger className="bg-card/80 border-border">
+                      <SelectValue placeholder="Select year" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">None</SelectItem>
+                      {years.map((year) => (
+                        <SelectItem key={year} value={year.toString()}>
+                          Year {year}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="flex items-center space-x-2">
                   <Switch

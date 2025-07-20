@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Check, Plus } from "lucide-react";
+import { X, Plus, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -23,13 +23,18 @@ const AddSubject = ({ onClose, onSave }: AddSubjectProps) => {
     code: "",
     department: "CSE",
     credits: 3,
+    type: null,
+    lab_duration: null,
+    year: null,
     is_active: true,
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const departments = ["CSE", "ECE", "MECH", "CIVIL", "EEE"];
+  const subjectTypes = ["lecture", "lab", "seminar"];
+  const years = [1, 2, 3, 4];
 
-  const handleInputChange = (field: keyof Tables<"subjects">, value: string | number | boolean) => {
+  const handleInputChange = (field: keyof Tables<"subjects">, value: string | number | boolean | null) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
@@ -49,7 +54,17 @@ const AddSubject = ({ onClose, onSave }: AddSubjectProps) => {
     try {
       const { error } = await supabase
         .from('subjects')
-        .insert([formData]);
+        .insert([{
+          id: formData.id,
+          name: formData.name,
+          code: formData.code,
+          department: formData.department,
+          credits: formData.credits,
+          type: formData.type,
+          lab_duration: formData.lab_duration,
+          year: formData.year,
+          is_active: formData.is_active,
+        }]);
 
       if (error) throw error;
 
@@ -82,7 +97,7 @@ const AddSubject = ({ onClose, onSave }: AddSubjectProps) => {
         >
           <Card className="bg-card/80 border-border">
             <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="text-xl text-foreground font-montserrat">Add New Subject</CardTitle>
+              <CardTitle className="text-xl text-foreground font-montserrat">Add Subject</CardTitle>
               <Button variant="ghost" size="sm" onClick={onClose}>
                 <X className="h-4 w-4" />
               </Button>
@@ -141,6 +156,56 @@ const AddSubject = ({ onClose, onSave }: AddSubjectProps) => {
                     required
                     className="bg-card/80 border-border"
                   />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="type" className="text-foreground">Type</Label>
+                  <Select
+                    value={formData.type || ""}
+                    onValueChange={(value) => handleInputChange("type", value || null)}
+                  >
+                    <SelectTrigger className="bg-card/80 border-border">
+                      <SelectValue placeholder="Select type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">None</SelectItem>
+                      {subjectTypes.map((type) => (
+                        <SelectItem key={type} value={type}>
+                          {type.charAt(0).toUpperCase() + type.slice(1)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="lab_duration" className="text-foreground">Lab Duration (hours)</Label>
+                  <Input
+                    id="lab_duration"
+                    type="number"
+                    value={formData.lab_duration || ""}
+                    onChange={(e) => handleInputChange("lab_duration", e.target.value ? parseInt(e.target.value) : null)}
+                    min="0"
+                    max="10"
+                    className="bg-card/80 border-border"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="year" className="text-foreground">Year</Label>
+                  <Select
+                    value={formData.year?.toString() || ""}
+                    onValueChange={(value) => handleInputChange("year", value ? parseInt(value) : null)}
+                  >
+                    <SelectTrigger className="bg-card/80 border-border">
+                      <SelectValue placeholder="Select year" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">None</SelectItem>
+                      {years.map((year) => (
+                        <SelectItem key={year} value={year.toString()}>
+                          Year {year}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="flex items-center space-x-2">
                   <Switch

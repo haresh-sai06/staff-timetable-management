@@ -136,11 +136,11 @@ const EditClassModal = ({ isOpen, onClose, entryId, department }: EditClassModal
       if (selectedSubject) {
         setFormData(prev => ({ 
           ...prev, 
-          subjectCode: selectedSubject.code,
-          subjectName: selectedSubject.name,
-          subjectType: selectedSubject.type,
+          subjectCode: selectedSubject.code || "",
+          subjectName: selectedSubject.name || "",
+          subjectType: selectedSubject.type || "",
           labDuration: selectedSubject.lab_duration || 0,
-          year: selectedSubject.year
+          year: selectedSubject.year?.toString() || "",
         }));
       }
     }
@@ -227,27 +227,30 @@ const EditClassModal = ({ isOpen, onClose, entryId, department }: EditClassModal
                           <SelectValue placeholder="Select subject" />
                         </SelectTrigger>
                         <SelectContent>
-                          {availableSubjects.map((subject) => (
-                            <SelectItem key={subject.id} value={subject.id}>
-                              <div className="flex items-center justify-between w-full">
-                                <span>{subject.name}</span>
-                                <div className="flex items-center space-x-1 ml-2">
-                                  <Badge variant="outline" className="text-xs">
-                                    {subject.code}
-                                  </Badge>
-                                  <Badge variant="secondary" className="text-xs">
-                                    {subject.type}
-                                  </Badge>
-                                  {subject.type === 'lab' && subject.lab_duration && (
-                                    <Badge variant="outline" className="text-xs">
-                                      {subject.lab_duration}P
-                                    </Badge>
-                                  )}
-                                </div>
-                              </div>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
+  {availableSubjects.map((subject) => (
+    <SelectItem
+      key={subject.id}
+      value={subject.id}
+      className="flex items-center justify-between w-full"
+    >
+      <span className="truncate">{subject.name}</span>
+      <span className="flex items-center space-x-1 ml-2">
+        <Badge variant="outline" className="text-xs">
+          {subject.code}
+        </Badge>
+        <Badge variant="secondary" className="text-xs">
+          {subject.type}
+        </Badge>
+        {subject.type === "lab" && subject.lab_duration && (
+          <Badge variant="outline" className="text-xs">
+            {subject.lab_duration}P
+          </Badge>
+        )}
+      </span>
+    </SelectItem>
+  ))}
+</SelectContent>
+
                       </Select>
                     )}
                   </div>

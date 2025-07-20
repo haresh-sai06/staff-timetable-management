@@ -1,5 +1,4 @@
-import { useState } from "react";
-import { useEffect } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Calendar, Play, RefreshCw, CheckCircle, AlertTriangle, Settings, Users, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -69,8 +68,7 @@ const AutoScheduleForm = ({ onGenerate, isGenerating, generatedTimetable, confli
         .from('subjects')
         .select('*')
         .eq('department', selectedDepartment)
-        .eq('year', selectedYear)
-        .eq('semester', selectedSemester)
+        .eq('year', parseInt(selectedYear.replace(/[^0-9]/g, '')))
         .eq('is_active', true)
         .order('name');
 
@@ -105,7 +103,6 @@ const AutoScheduleForm = ({ onGenerate, isGenerating, generatedTimetable, confli
 
   const handleGenerate = () => {
     if (selectedDepartment && selectedYear && selectedSemester && availableSubjects.length > 0) {
-      // Pass subjects data along with other parameters
       const enhancedStaffData = staffData.map(staff => ({
         ...staff,
         availableSubjects: availableSubjects.filter(subject => 
@@ -276,7 +273,6 @@ const AutoScheduleForm = ({ onGenerate, isGenerating, generatedTimetable, confli
                 </div>
               )}
               
-              {/* Subjects Summary */}
               {availableSubjects.length > 0 && (
                 <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
                   <div className="flex items-center space-x-2 mb-3">
