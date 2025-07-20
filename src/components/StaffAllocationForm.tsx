@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import type { Tables } from "@/integrations/supabase/types";
 
 interface StaffMember {
   id: string;
@@ -26,10 +27,11 @@ interface StaffMember {
 
 interface StaffAllocationFormProps {
   selectedDepartment: string;
+  availableSubjects: Tables<"subjects">[];
   onStaffAllocation: (staffData: StaffMember[]) => void;
 }
 
-const StaffAllocationForm = ({ selectedDepartment, onStaffAllocation }: StaffAllocationFormProps) => {
+const StaffAllocationForm = ({ selectedDepartment, availableSubjects, onStaffAllocation }: StaffAllocationFormProps) => {
   const [staffList, setStaffList] = useState<StaffMember[]>([]);
 
   useEffect(() => {
@@ -113,10 +115,56 @@ const StaffAllocationForm = ({ selectedDepartment, onStaffAllocation }: StaffAll
           <CardTitle className="flex items-center space-x-2 text-foreground">
             <Users className="h-5 w-5 text-accent" />
             <span>Staff Allocation - {selectedDepartment} Department</span>
-            <p className="text-sm text-muted-foreground ml-4">(Note: Tutor assignments are now managed in Staff Management)</p>
+            <Badge variant="outline" className="ml-2">
+              {availableSubjects.length} Subjects Available
+            </Badge>
           </CardTitle>
+          <p className="text-sm text-muted-foreground">(Note: Tutor assignments are now managed in Staff Management)</p>
         </CardHeader>
         <CardContent className="space-y-6">
+          {/* Available Subjects Summary */}
+          {availableSubjects.length > 0 && (
+            <div className="p-4 bg-muted/30 rounded-lg">
+              <div className="flex items-center space-x-2 mb-3">
+                <BookOpen className="h-4 w-4 text-accent" />
+                <span className="font-medium text-foreground">Subjects to be Scheduled</span>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm font-medium text-foreground mb-2">Theory Subjects ({availableSubjects.filter(s => s.type === 'theory').length})</p>
+                  <div className="space-y-1">
+                    {availableSubjects.filter(s => s.type === 'theory').slice(0, 3).map(subject => (
+                      <div key={subject.id} className="flex items-center justify-between text-xs">
+                        <span>{subject.name}</span>
+                        <Badge variant="outline" className="text-xs">{subject.code}</Badge>
+                      </div>
+                    ))}
+                    {availableSubjects.filter(s => s.type === 'theory').length > 3 && (
+                      <p className="text-xs text-muted-foreground">+{availableSubjects.filter(s => s.type === 'theory').length - 3} more...</p>
+                    )}
+                  </div>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-foreground mb-2">Lab Subjects ({availableSubjects.filter(s => s.type === 'lab').length})</p>
+                  <div className="space-y-1">
+                    {availableSubjects.filter(s => s.type === 'lab').slice(0, 3).map(subject => (
+                      <div key={subject.id} className="flex items-center justify-between text-xs">
+                        <span>{subject.name}</span>
+                        <div className="flex items-center space-x-1">
+                          <Badge variant="outline" className="text-xs">{subject.code}</Badge>
+                          <Badge variant="secondary" className="text-xs">{subject.lab_duration}P</Badge>
+                        </div>
+                      </div>
+                    ))}
+                    {availableSubjects.filter(s => s.type === 'lab').length > 3 && (
+                      <p className="text-xs text-muted-foreground">+{availableSubjects.filter(s => s.type === 'lab').length - 3} more...</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+          
           {staffList.map((staff) => (
             <motion.div
               key={staff.id}

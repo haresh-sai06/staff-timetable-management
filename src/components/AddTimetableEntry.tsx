@@ -1,5 +1,6 @@
 
 import { useState } from "react";
+import { useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Plus, AlertCircle, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -8,7 +9,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import type { Tables } from "@/integrations/supabase/types";
 
 interface AddTimetableEntryProps {
   onClose: () => void;
@@ -18,22 +22,53 @@ interface AddTimetableEntryProps {
 
 const AddTimetableEntry = ({ onClose, department, semester }: AddTimetableEntryProps) => {
   const [formData, setFormData] = useState({
-    subject: "",
+    subjectId: "",
     subjectCode: "",
+    subjectName: "",
+    subjectType: "",
+    labDuration: 0,
     staff: "",
     staffRole: "",
     classroom: "",
     studentGroup: "",
+    year: "",
     day: "",
     timeSlot: ""
   });
+  const [availableSubjects, setAvailableSubjects] = useState<Tables<"subjects">[]>([]);
+  const [loadingSubjects, setLoadingSubjects] = useState(true);
   const [conflicts, setConflicts] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  useEffect(() => {
+    fetchSubjects();
+  }, [department, semester]);
+
+  const fetchSubjects = async () => {
+    setLoadingSubjects(true);
+    try {
+      const { data, error } = await supabase
+        .from('subjects')
+        .select('*')
+        .eq('department', department)
+        .eq('semester', semester === 'odd' ? 'odd' : 'even')
+        .eq('is_active', true)
+        .order('name');
+
+      if (error) throw error;
+      setAvailableSubjects(data || []);
+    } catch (error: any) {
+      console.error('Error fetching subjects:', error);
+      toast.error("Failed to fetch subjects");
+    } finally {
+      setLoadingSubjects(false);
+    }
+  };
+
   const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
   const timeSlots = [
-    "08:00-09:00", "09:00-10:00", "10:00-11:00", "11:00-12:00",
-    "12:00-13:00", "13:00-14:00", "14:00-15:00", "15:00-16:00", "16:00-17:00"
+    "09:15-10:10", "10:10-11:05", "11:20-12:15", 
+    "13:00-13:55", "13:55-14:50", "14:50-15:45"
   ];
 
   const staffMembers = [
@@ -48,20 +83,21 @@ const AddTimetableEntry = ({ onClose, department, semester }: AddTimetableEntryP
     { name: "CSE-Lab1", capacity: 30, type: "Computer Lab" },
   ];
 
-  const subjects = [
-    { code: "CS8391", name: "Data Structures", credits: 3 },
-    { code: "CS8481", name: "Database Management", credits: 3 },
-    { code: "CS8591", name: "Computer Networks", credits: 3 },
-  ];
-
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     
-    // Auto-fill subject code when subject is selected
-    if (field === "subject") {
-      const selectedSubject = subjects.find(s => s.name === value);
+    // Auto-fill subject details when subject is selected
+    if (field === "subjectId") {
+      const selectedSubject = availableSubjects.find(s => s.id === value);
       if (selectedSubject) {
-        setFormData(prev => ({ ...prev, subjectCode: selectedSubject.code }));
+        setFormData(prev => ({ 
+          ...prev, 
+          subjectCode: selectedSubject.code,
+          subjectName: selectedSubject.name,
+          subjectType: selectedSubject.type,
+          labDuration: selectedSubject.lab_duration || 0,
+          year: selectedSubject.year
+        }));
       }
     }
     
@@ -153,30 +189,70 @@ const AddTimetableEntry = ({ onClose, department, semester }: AddTimetableEntryP
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="subject">Subject</Label>
-                    <Select value={formData.subject} onValueChange={(value) => handleInputChange("subject", value)}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select subject" />
+                    {loadingSubjects ? (
+                      <div className="flex items-center justify-center p-3 border border-border rounded-md">
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-accent"></div>
+                        <span className="ml-2 text-sm">Loading subjects...</span>
+                      </div>
+                    ) : (
+                      <Select value={formData.subjectId} onValueChange={(value) => handleInputChange("subjectId", value)}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select subject" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {availableSubjects.map((subject) => (
+                            <SelectItem key={subject.id} value={subject.id}>
+                              <div className="flex items-center justify-between w-full">
+                                <span>{subject.name}</span>
+                                <div className="flex items-center space-x-1 ml-2">
+                                  <Badge variant="outline" className="text-xs">
+                                    {subject.code}
+                                  </Badge>
+                                  <Badge variant="secondary" className="text-xs">
+                                    {subject.type}
+                                  </Badge>
+                                  {subject.type === 'lab' && subject.lab_duration && (
+                                    <Badge variant="outline" className="text-xs">
+                                      {subject.lab_duration}P
+                                    </Badge>
+                                  )}
+                                </div>
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
                       </SelectTrigger>
-                      <SelectContent>
-                        {subjects.map((subject) => (
-                          <SelectItem key={subject.code} value={subject.name}>
-                            {subject.name} ({subject.code})
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    )}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="subjectCode">Subject Code</Label>
                     <Input
                       id="subjectCode"
                       value={formData.subjectCode}
-                      onChange={(e) => handleInputChange("subjectCode", e.target.value)}
+                      readOnly
                       placeholder="e.g., CS8391"
-                      disabled
+                      className="bg-muted"
                     />
                   </div>
                 </div>
+
+                {/* Subject Details */}
+                {formData.subjectId && (
+                  <div className="p-3 bg-muted/30 rounded-lg">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-medium text-foreground">{formData.subjectName}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {formData.subjectType === 'lab' ? `Lab Subject (${formData.labDuration} periods)` : 'Theory Subject'}
+                        </p>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Badge variant="outline">{formData.year} Year</Badge>
+                        <Badge variant="secondary">{formData.subjectType}</Badge>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {/* Staff Information */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

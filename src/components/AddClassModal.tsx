@@ -1,12 +1,17 @@
 
 import { useState } from "react";
+import { useEffect } from "react";
 import { motion } from "framer-motion";
 import { X, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import type { Tables } from "@/integrations/supabase/types";
 
 interface AddClassModalProps {
   isOpen: boolean;
@@ -18,8 +23,11 @@ interface AddClassModalProps {
 
 const AddClassModal = ({ isOpen, onClose, department, day, timeSlot }: AddClassModalProps) => {
   const [formData, setFormData] = useState({
-    subject: "",
+    subjectId: "",
     subjectCode: "",
+    subjectName: "",
+    subjectType: "",
+    labDuration: 0,
     staff: "",
     classroom: "",
     studentGroup: "",
@@ -27,14 +35,61 @@ const AddClassModal = ({ isOpen, onClose, department, day, timeSlot }: AddClassM
     day: day || "",
     timeSlot: timeSlot || "",
   });
+  const [availableSubjects, setAvailableSubjects] = useState<Tables<"subjects">[]>([]);
+  const [loadingSubjects, setLoadingSubjects] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
+
+  useEffect(() => {
+    if (isOpen && department) {
+      fetchSubjects();
+    }
+  }, [isOpen, department]);
+
+  const fetchSubjects = async () => {
+    setLoadingSubjects(true);
+    try {
+      const { data, error } = await supabase
+        .from('subjects')
+        .select('*')
+        .eq('department', department)
+        .eq('is_active', true)
+        .order('name');
+
+      if (error) throw error;
+      setAvailableSubjects(data || []);
+    } catch (error: any) {
+      console.error('Error fetching subjects:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch subjects",
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingSubjects(false);
+    }
+  };
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
     }));
+
+    // Auto-fill subject details when subject is selected
+    if (field === "subjectId") {
+      const selectedSubject = availableSubjects.find(s => s.id === value);
+      if (selectedSubject) {
+        setFormData(prev => ({ 
+          ...prev, 
+          subjectCode: selectedSubject.code,
+          subjectName: selectedSubject.name,
+          subjectType: selectedSubject.type,
+          labDuration: selectedSubject.lab_duration || 0,
+          year: selectedSubject.year
+        }));
+      }
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -109,13 +164,40 @@ const AddClassModal = ({ isOpen, onClose, department, day, timeSlot }: AddClassM
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="subject" className="text-foreground">Subject Name</Label>
-                  <Input
-                    id="subject"
-                    value={formData.subject}
-                    onChange={(e) => handleInputChange("subject", e.target.value)}
-                    placeholder="e.g., Data Structures"
-                    required
-                  />
+                  {loadingSubjects ? (
+                    <div className="flex items-center justify-center p-3 border border-border rounded-md">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-accent"></div>
+                      <span className="ml-2 text-sm">Loading subjects...</span>
+                    </div>
+                  ) : (
+                    <Select value={formData.subjectId} onValueChange={(value) => handleInputChange("subjectId", value)}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select subject" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {availableSubjects.map((subject) => (
+                          <SelectItem key={subject.id} value={subject.id}>
+                            <div className="flex items-center justify-between w-full">
+                              <span>{subject.name}</span>
+                              <div className="flex items-center space-x-1 ml-2">
+                                <Badge variant="outline" className="text-xs">
+                                  {subject.code}
+                                </Badge>
+                                <Badge variant="secondary" className="text-xs">
+                                  {subject.type}
+                                </Badge>
+                                {subject.type === 'lab' && subject.lab_duration && (
+                                  <Badge variant="outline" className="text-xs">
+                                    {subject.lab_duration}P
+                                  </Badge>
+                                )}
+                              </div>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
                 </div>
                 
                 <div>
@@ -123,11 +205,29 @@ const AddClassModal = ({ isOpen, onClose, department, day, timeSlot }: AddClassM
                   <Input
                     id="subjectCode"
                     value={formData.subjectCode}
-                    onChange={(e) => handleInputChange("subjectCode", e.target.value)}
+                    readOnly
                     placeholder="e.g., CS8391"
-                    required
+                    className="bg-muted"
                   />
                 </div>
+                
+                {/* Subject Details */}
+                {formData.subjectId && (
+                  <div className="col-span-2 p-3 bg-muted/30 rounded-lg">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-medium text-foreground">{formData.subjectName}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {formData.subjectType === 'lab' ? `Lab Subject (${formData.labDuration} periods)` : 'Theory Subject'}
+                        </p>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Badge variant="outline">{formData.year} Year</Badge>
+                        <Badge variant="secondary">{formData.subjectType}</Badge>
+                      </div>
+                    </div>
+                  </div>
+                )}
                 
                 <div>
                   <Label htmlFor="staff" className="text-foreground">Staff Name</Label>

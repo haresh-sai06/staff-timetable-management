@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useEffect } from "react";
 import { motion } from "framer-motion";
 import { Calendar, Play, RefreshCw, CheckCircle, AlertTriangle, Settings, Users, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -8,7 +9,9 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { supabase } from "@/integrations/supabase/client";
 import StaffAllocationForm from "./StaffAllocationForm";
+import type { Tables } from "@/integrations/supabase/types";
 
 interface AutoScheduleFormProps {
   onGenerate: (department: string, year: string, semester: string, conditions: SchedulingConditions, staffData?: any[]) => void;
@@ -34,6 +37,8 @@ const AutoScheduleForm = ({ onGenerate, isGenerating, generatedTimetable, confli
   const [selectedDepartment, setSelectedDepartment] = useState("");
   const [selectedYear, setSelectedYear] = useState("");
   const [selectedSemester, setSelectedSemester] = useState("");
+  const [availableSubjects, setAvailableSubjects] = useState<Tables<"subjects">[]>([]);
+  const [loadingSubjects, setLoadingSubjects] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [staffData, setStaffData] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState("basic");
@@ -50,6 +55,33 @@ const AutoScheduleForm = ({ onGenerate, isGenerating, generatedTimetable, confli
     enhancedLabScheduling: true,
     crossDepartmentCheck: true
   });
+
+  useEffect(() => {
+    if (selectedDepartment && selectedYear && selectedSemester) {
+      fetchSubjectsForScheduling();
+    }
+  }, [selectedDepartment, selectedYear, selectedSemester]);
+
+  const fetchSubjectsForScheduling = async () => {
+    setLoadingSubjects(true);
+    try {
+      const { data, error } = await supabase
+        .from('subjects')
+        .select('*')
+        .eq('department', selectedDepartment)
+        .eq('year', selectedYear)
+        .eq('semester', selectedSemester)
+        .eq('is_active', true)
+        .order('name');
+
+      if (error) throw error;
+      setAvailableSubjects(data || []);
+    } catch (error: any) {
+      console.error('Error fetching subjects for scheduling:', error);
+    } finally {
+      setLoadingSubjects(false);
+    }
+  };
 
   const departments = [
     { value: "CSE", label: "Computer Science & Engineering" },
@@ -72,12 +104,19 @@ const AutoScheduleForm = ({ onGenerate, isGenerating, generatedTimetable, confli
   ];
 
   const handleGenerate = () => {
-    if (selectedDepartment && selectedYear && selectedSemester) {
-      onGenerate(selectedDepartment, selectedYear, selectedSemester, conditions, staffData);
+    if (selectedDepartment && selectedYear && selectedSemester && availableSubjects.length > 0) {
+      // Pass subjects data along with other parameters
+      const enhancedStaffData = staffData.map(staff => ({
+        ...staff,
+        availableSubjects: availableSubjects.filter(subject => 
+          staff.subjects?.includes(subject.code) || staff.subjects?.length === 0
+        )
+      }));
+      onGenerate(selectedDepartment, selectedYear, selectedSemester, conditions, enhancedStaffData);
     }
   };
 
-  const canGenerate = selectedDepartment && selectedYear && selectedSemester && !isGenerating && staffData.length > 0;
+  const canGenerate = selectedDepartment && selectedYear && selectedSemester && !isGenerating && staffData.length > 0 && availableSubjects.length > 0;
 
   const updateCondition = (key: keyof SchedulingConditions, value: any) => {
     setConditions(prev => ({ ...prev, [key]: value }));
@@ -227,10 +266,52 @@ const AutoScheduleForm = ({ onGenerate, isGenerating, generatedTimetable, confli
                   <Button 
                     onClick={() => setActiveTab("staff")}
                     className="bg-accent hover:bg-accent/90 text-accent-foreground"
+                    disabled={loadingSubjects || availableSubjects.length === 0}
                   >
                     <Users className="h-4 w-4 mr-2" />
-                    Configure Staff Allocation
+                    {loadingSubjects ? "Loading Subjects..." : 
+                     availableSubjects.length === 0 ? "No Subjects Available" : 
+                     "Configure Staff Allocation"}
                   </Button>
+                </div>
+              )}
+              
+              {/* Subjects Summary */}
+              {availableSubjects.length > 0 && (
+                <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                  <div className="flex items-center space-x-2 mb-3">
+                    <Calendar className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                    <span className="font-medium text-blue-800 dark:text-blue-200">
+                      Available Subjects for {selectedDepartment} - {selectedYear} Year ({selectedSemester} semester)
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <div className="font-medium text-blue-800 dark:text-blue-200 mb-2">Theory Subjects</div>
+                      <div className="space-y-1 text-blue-700 dark:text-blue-300">
+                        {availableSubjects.filter(s => s.type === 'theory').map(subject => (
+                          <div key={subject.id} className="flex items-center justify-between">
+                            <span>{subject.name}</span>
+                            <Badge variant="outline" className="text-xs">{subject.code}</Badge>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="font-medium text-blue-800 dark:text-blue-200 mb-2">Lab Subjects</div>
+                      <div className="space-y-1 text-blue-700 dark:text-blue-300">
+                        {availableSubjects.filter(s => s.type === 'lab').map(subject => (
+                          <div key={subject.id} className="flex items-center justify-between">
+                            <span>{subject.name}</span>
+                            <div className="flex items-center space-x-1">
+                              <Badge variant="outline" className="text-xs">{subject.code}</Badge>
+                              <Badge variant="secondary" className="text-xs">{subject.lab_duration}P</Badge>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
                 </div>
               )}
             </TabsContent>
@@ -238,6 +319,7 @@ const AutoScheduleForm = ({ onGenerate, isGenerating, generatedTimetable, confli
             <TabsContent value="staff" className="mt-6">
               <StaffAllocationForm 
                 selectedDepartment={selectedDepartment}
+                availableSubjects={availableSubjects}
                 onStaffAllocation={handleStaffAllocation}
               />
             </TabsContent>

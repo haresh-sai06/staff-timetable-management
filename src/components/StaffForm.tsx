@@ -1,13 +1,17 @@
 
 import { useState } from "react";
+import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { X, Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import type { Tables } from "@/integrations/supabase/types";
 
 interface Staff {
   id?: string;
@@ -38,12 +42,46 @@ const StaffForm = ({ staff, onSave, onCancel }: StaffFormProps) => {
     subjects: staff?.subjects || [],
     is_active: staff?.is_active ?? true,
   });
-  const [newSubject, setNewSubject] = useState("");
+  const [availableSubjects, setAvailableSubjects] = useState<Tables<"subjects">[]>([]);
+  const [selectedSubjects, setSelectedSubjects] = useState<string[]>(staff?.subjects || []);
   const [loading, setLoading] = useState(false);
+  const [loadingSubjects, setLoadingSubjects] = useState(true);
   const { toast } = useToast();
 
   const departments = ["CSE", "ECE", "MECH", "CIVIL", "EEE"];
   const roles = ["Prof", "AsstProf", "AssocProf"];
+
+  useEffect(() => {
+    fetchSubjects();
+  }, [formData.department]);
+
+  useEffect(() => {
+    setFormData(prev => ({ ...prev, subjects: selectedSubjects }));
+  }, [selectedSubjects]);
+
+  const fetchSubjects = async () => {
+    setLoadingSubjects(true);
+    try {
+      const { data, error } = await supabase
+        .from('subjects')
+        .select('*')
+        .eq('department', formData.department)
+        .eq('is_active', true)
+        .order('name');
+
+      if (error) throw error;
+      setAvailableSubjects(data || []);
+    } catch (error: any) {
+      console.error('Error fetching subjects:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch subjects",
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingSubjects(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -80,21 +118,17 @@ const StaffForm = ({ staff, onSave, onCancel }: StaffFormProps) => {
     }
   };
 
-  const addSubject = () => {
-    if (newSubject.trim() && !formData.subjects.includes(newSubject.trim())) {
-      setFormData({
-        ...formData,
-        subjects: [...formData.subjects, newSubject.trim()]
-      });
-      setNewSubject("");
+  const handleSubjectToggle = (subjectCode: string, checked: boolean) => {
+    if (checked) {
+      setSelectedSubjects(prev => [...prev, subjectCode]);
+    } else {
+      setSelectedSubjects(prev => prev.filter(code => code !== subjectCode));
     }
   };
 
-  const removeSubject = (subject: string) => {
-    setFormData({
-      ...formData,
-      subjects: formData.subjects.filter(s => s !== subject)
-    });
+  const handleDepartmentChange = (department: string) => {
+    setFormData(prev => ({ ...prev, department }));
+    setSelectedSubjects([]); // Clear selected subjects when department changes
   };
 
   return (
@@ -132,7 +166,7 @@ const StaffForm = ({ staff, onSave, onCancel }: StaffFormProps) => {
               <select
                 id="department"
                 value={formData.department}
-                onChange={(e) => setFormData({...formData, department: e.target.value})}
+                onChange={(e) => handleDepartmentChange(e.target.value)}
                 className="w-full px-3 py-2 border border-border rounded-md bg-background"
                 required
               >
@@ -185,28 +219,64 @@ const StaffForm = ({ staff, onSave, onCancel }: StaffFormProps) => {
           </div>
 
           <div>
-            <Label>Subjects</Label>
-            <div className="flex gap-2 mb-2">
-              <Input
-                value={newSubject}
-                onChange={(e) => setNewSubject(e.target.value)}
-                placeholder="Add a subject"
-                onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addSubject())}
-              />
-              <Button type="button" onClick={addSubject} size="sm">
-                <Plus className="h-4 w-4" />
-              </Button>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {formData.subjects.map((subject, index) => (
-                <Badge key={index} variant="secondary" className="flex items-center gap-1">
-                  {subject}
-                  <X
-                    className="h-3 w-3 cursor-pointer"
-                    onClick={() => removeSubject(subject)}
-                  />
-                </Badge>
-              ))}
+            <Label>Assigned Subjects</Label>
+            {loadingSubjects ? (
+              <div className="flex items-center justify-center p-4">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-accent"></div>
+                <span className="ml-2 text-sm text-muted-foreground">Loading subjects...</span>
+              </div>
+            ) : (
+              <div className="space-y-2 max-h-48 overflow-y-auto border border-border rounded-md p-3">
+                {availableSubjects.length > 0 ? (
+                  availableSubjects.map((subject) => (
+                    <div key={subject.id} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={subject.id}
+                        checked={selectedSubjects.includes(subject.code)}
+                        onCheckedChange={(checked) => handleSubjectToggle(subject.code, checked as boolean)}
+                      />
+                      <Label htmlFor={subject.id} className="flex-1 cursor-pointer">
+                        <div className="flex items-center justify-between">
+                          <span>{subject.name}</span>
+                          <div className="flex items-center space-x-2">
+                            <Badge variant="outline" className="text-xs">
+                              {subject.code}
+                            </Badge>
+                            <Badge variant="secondary" className="text-xs">
+                              {subject.type}
+                            </Badge>
+                            {subject.type === 'lab' && subject.lab_duration && (
+                              <Badge variant="outline" className="text-xs">
+                                {subject.lab_duration}P
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                      </Label>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-sm text-muted-foreground text-center py-4">
+                    No subjects available for {formData.department} department
+                  </p>
+                )}
+              </div>
+            )}
+            {selectedSubjects.length > 0 && (
+              <div className="mt-2">
+                <p className="text-sm text-muted-foreground mb-2">Selected: {selectedSubjects.length} subjects</p>
+                <div className="flex flex-wrap gap-1">
+                  {selectedSubjects.map((subjectCode) => {
+                    const subject = availableSubjects.find(s => s.code === subjectCode);
+                    return (
+                      <Badge key={subjectCode} variant="secondary" className="text-xs">
+                        {subject?.name || subjectCode}
+                      </Badge>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
             </div>
           </div>
 
