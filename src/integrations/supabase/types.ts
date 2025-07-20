@@ -170,6 +170,33 @@ export type Database = {
         }
         Relationships: []
       }
+      subjects: {
+        Row: {
+          id: string
+          name: string
+          code: string
+          department: string
+          credits: number
+          is_active: boolean
+        }
+        Insert: {
+         id?: string
+         name: string
+         code: string
+         department: string
+         credits: number
+         is_active?: boolean
+       }
+        Update: {
+          id?: string
+          name?: string
+          code?: string
+          department?: string
+          credits?: number
+          is_active?: boolean
+       }
+       Relationships: []
+      }
       timetable_entries: {
         Row: {
           academic_year: string

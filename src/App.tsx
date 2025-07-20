@@ -17,6 +17,7 @@ import ClassroomManagement from "./pages/ClassroomManagement";
 import ConflictResolution from "./pages/ConflictResolution";
 import NotFound from "./pages/NotFound";
 import MobileSidebar from "./components/MobileSidebar";
+import SubjectManagement from "./pages/SubjectManagement";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -94,6 +95,11 @@ const App = () => (
                 <Route path="/classrooms" element={
                   <AuthGuard>
                     <ClassroomManagement />
+                  </AuthGuard>
+                } />
+                <Route path="/subjects" element={
+                  <AuthGuard>
+                    <SubjectManagement />
                   </AuthGuard>
                 } />
                 <Route path="/conflicts" element={

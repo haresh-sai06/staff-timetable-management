@@ -40,6 +40,12 @@ const MobileSidebar = () => {
       description: "Staff management"
     },
     { 
+      name: "Subjects", 
+      path: "/subjects", 
+      icon: Users,
+      description: "Subject management"
+    },
+    { 
       name: "Classrooms", 
       path: "/classrooms", 
       icon: Building,
@@ -209,10 +215,10 @@ const MobileSidebar = () => {
               <div className="mt-8 pt-6 border-t border-border">
                 <div className="text-center">
                   <p className="text-xs text-muted-foreground mb-2">
-                    Made with ❤️ for SKCT
+                    SKCT Timetable System © 2024
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    Version 2.0
+                    Version 1.0
                   </p>
                 </div>
               </div>

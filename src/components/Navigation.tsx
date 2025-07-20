@@ -125,6 +125,12 @@ const Navigation = () => {
       description: "Staff management"
     },
     { 
+      name: "Subjects", 
+      path: "/subjects", 
+      icon: Users,
+      description: "Subject management"
+    },
+    { 
       name: "Classrooms", 
       path: "/classrooms", 
       icon: Building,
@@ -155,7 +161,7 @@ const Navigation = () => {
           <div className="flex items-center justify-between">
             <div className="animate-pulse flex items-center space-x-4">
               <div className="w-8 h-8 bg-muted rounded"></div>
-              <div className="w-24 h-6 bg-muted rounded"></div>
+              <div className="w-20 h-6 bg-muted rounded"></div>
             </div>
             <div className="animate-pulse w-8 h-8 bg-muted rounded-full"></div>
           </div>
@@ -172,7 +178,7 @@ const Navigation = () => {
           <Link
             key={item.path}
             to={item.path}
-            className={`flex items-center space-x-3 px-4 py-3 rounded-lg text-sm font-medium transition-all hover:bg-accent hover:text-accent-foreground ${
+            className={`flex items-center space-x-2 px-4 py-3 rounded-lg text-sm font-medium transition-all hover:bg-accent hover:text-accent-foreground ${
               isActive
                 ? "bg-accent text-accent-foreground shadow-sm"
                 : "text-muted-foreground"
