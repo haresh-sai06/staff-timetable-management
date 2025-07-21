@@ -328,7 +328,7 @@ const StaffForm = ({ staff, onSave, onCancel }: StaffFormProps) => {
                         })}
                       </div>
                     </div>
-                  )}
+                      <div className="space-y-2 max-h-48 overflow-y-auto border border-border rounded-md p-3 bg-background">
                 </div>
                 <div className="flex items-center space-x-2">
                   <Checkbox

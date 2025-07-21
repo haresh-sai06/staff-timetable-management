@@ -201,6 +201,7 @@ const AddClassModal = ({ isOpen, onClose, department, day, timeSlot }: AddClassM
                       </Select>
                     )}
                   </div>
+                  
                   <div>
                     <Label htmlFor="subjectCode" className="text-foreground">Subject Code</Label>
                     <Input
@@ -211,22 +212,26 @@ const AddClassModal = ({ isOpen, onClose, department, day, timeSlot }: AddClassM
                       className="bg-muted"
                     />
                   </div>
-                  {formData.subjectId && (
-                    <div className="col-span-2 p-3 bg-muted/30 rounded-lg">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="font-medium text-foreground">{formData.subjectName}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {formData.subjectType === 'lab' ? `Lab Subject (${formData.labDuration} periods)` : 'Theory Subject'}
-                          </p>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <Badge variant="outline">{formData.year} Year</Badge>
-                          <Badge variant="secondary">{formData.subjectType}</Badge>
-                        </div>
+                </div>
+                
+                {formData.subjectId && (
+                  <div className="p-3 bg-muted/30 rounded-lg">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-medium text-foreground">{formData.subjectName}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {formData.subjectType === 'lab' ? `Lab Subject (${formData.labDuration} periods)` : 'Theory Subject'}
+                        </p>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Badge variant="outline">{formData.year} Year</Badge>
+                        <Badge variant="secondary">{formData.subjectType}</Badge>
                       </div>
                     </div>
-                  )}
+                  </div>
+                )}
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="staff" className="text-foreground">Staff Name</Label>
                     <Input

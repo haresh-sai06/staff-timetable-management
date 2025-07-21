@@ -256,28 +256,14 @@ const AddTimetableEntry = ({ onClose, department, semester }: AddTimetableEntryP
                         <SelectValue placeholder="Select subject" />
                       </SelectTrigger>
 <SelectContent>
-  {availableSubjects.map((subject) => (
-    <SelectItem
-      key={subject.id}
-      value={subject.id}
-      className="flex items-center justify-between w-full space-x-2"
-    >
-      <span className="truncate">{subject.name}</span>
-      <span className="flex items-center space-x-1 ml-auto">
-        <Badge variant="outline" className="text-xs">
-          {subject.code}
-        </Badge>
-        <Badge variant="secondary" className="text-xs">
-          {subject.type}
-        </Badge>
-        {subject.type === "lab" && subject.lab_duration && (
-          <Badge variant="outline" className="text-xs">
-            {subject.lab_duration}P
-          </Badge>
-        )}
-      </span>
-    </SelectItem>
-  ))}
+                          {availableSubjects.map((subject) => (
+                            <SelectItem key={subject.id} value={subject.id}>
+                              {subject.name} - {subject.code} ({subject.type}
+                              {subject.type === 'lab' && subject.lab_duration 
+                                ? `, ${subject.lab_duration}P` 
+                                : ""})
+                            </SelectItem>
+                          ))}
 </SelectContent>
 
                       </Select>

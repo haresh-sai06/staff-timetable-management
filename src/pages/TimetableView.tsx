@@ -15,7 +15,7 @@ import AutoScheduleForm from "@/components/AutoScheduleForm";
 import TimetablePreview from "@/components/TimetablePreview";
 import ThemeToggle from "@/components/ThemeToggle";
 import ExportTimetable from "@/components/ExportTimetable";
-import EditClassModal from "@/components/EditClassModal";
+import EditClassModal from "../components/EditClassModal";
 import AddClassModal from "@/components/AddClassModal";
 
 const TimetableView = () => {

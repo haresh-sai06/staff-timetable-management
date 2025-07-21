@@ -97,6 +97,11 @@ subjects: {
           lab_duration: number | null
           year: number | null
           is_active: boolean
+          semester: string | null
+          prerequisites: string[] | null
+          description: string | null
+          created_at: string | null
+          updated_at: string | null
         }
         Insert: {
           id?: string
@@ -108,6 +113,11 @@ subjects: {
           lab_duration?: number | null
           year?: number | null
           is_active?: boolean
+          semester?: string | null
+          prerequisites?: string[] | null
+          description?: string | null
+          created_at?: string | null
+          updated_at?: string | null
         }
         Update: {
           id?: string
@@ -119,6 +129,11 @@ subjects: {
           lab_duration?: number | null
           year?: number | null
           is_active?: boolean
+          semester?: string | null
+          prerequisites?: string[] | null
+          description?: string | null
+          created_at?: string | null
+          updated_at?: string | null
         }
         Relationships: []
       }

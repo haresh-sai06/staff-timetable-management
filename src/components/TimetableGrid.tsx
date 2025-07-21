@@ -55,6 +55,7 @@ const TimetableGrid = ({
     open: false,
     entryId: ""
   });
+  const [hoveredSlot, setHoveredSlot] = useState<string | null>(null);
 
   // Updated timing structure - 6 periods of 55 minutes each
   const timeSlots = [

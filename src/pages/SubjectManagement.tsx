@@ -191,6 +191,16 @@ const SubjectManagement = () => {
     setSelectedSubject(null);
   };
 
+  const handleModalSave = () => {
+    handleCloseModals();
+    fetchSubjects();
+  };
+
+  const handleModalDelete = () => {
+    handleCloseModals();
+    fetchSubjects();
+  };
+
   // Loading state
   if (loading) {
     return (
@@ -400,20 +410,20 @@ const SubjectManagement = () => {
 
         {/* Modals */}
         {showAddModal && (
-          <AddSubject onClose={handleCloseModals} onSave={() => { handleCloseModals(); fetchSubjects(); }} />
+          <AddSubject onClose={handleCloseModals} onSave={handleModalSave} />
         )}
         {showEditModal && selectedSubject && (
           <EditSubject
             subject={selectedSubject}
             onClose={handleCloseModals}
-            onSave={() => { handleCloseModals(); fetchSubjects(); }}
+            onSave={handleModalSave}
           />
         )}
         {showDeleteModal && selectedSubject && (
           <DeleteSubject
             subject={selectedSubject}
             onClose={handleCloseModals}
-            onDelete={() => { handleCloseModals(); fetchSubjects(); }}
+            onDelete={handleModalDelete}
           />
         )}
       </div>

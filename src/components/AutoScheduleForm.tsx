@@ -121,7 +121,9 @@ const AutoScheduleForm = ({ onGenerate, isGenerating, generatedTimetable, confli
 
   const handleStaffAllocation = (allocatedStaff: any[]) => {
     setStaffData(allocatedStaff);
-    setActiveTab("conditions");
+    if (allocatedStaff.length > 0) {
+      setActiveTab("conditions");
+    }
   };
 
   const highSeverityConflicts = conflicts?.filter(c => c.severity === 'high') || [];
