@@ -168,7 +168,7 @@ const EditSubject = ({ subject, onClose, onSave }: EditSubjectProps) => {
                       <SelectValue placeholder="Select type" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">None</SelectItem>
+                      <SelectItem value="none">None</SelectItem>
                       {subjectTypes.map((type) => (
                         <SelectItem key={type} value={type}>
                           {type.charAt(0).toUpperCase() + type.slice(1)}
@@ -199,7 +199,7 @@ const EditSubject = ({ subject, onClose, onSave }: EditSubjectProps) => {
                       <SelectValue placeholder="Select year" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">None</SelectItem>
+                      <SelectItem value="none">None</SelectItem>
                       {years.map((year) => (
                         <SelectItem key={year} value={year.toString()}>
                           Year {year}

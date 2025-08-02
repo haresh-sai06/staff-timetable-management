@@ -272,7 +272,7 @@ const AddClassModal = ({ isOpen, onClose, department, day, timeSlot }: AddClassM
                         <SelectValue placeholder="Select Year" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">Select Year</SelectItem>
+                        
                         <SelectItem value="1">1st Year</SelectItem>
                         <SelectItem value="2">2nd Year</SelectItem>
                         <SelectItem value="3">3rd Year</SelectItem>
@@ -290,7 +290,7 @@ const AddClassModal = ({ isOpen, onClose, department, day, timeSlot }: AddClassM
                         <SelectValue placeholder="Select Day" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">Select Day</SelectItem>
+                        
                         <SelectItem value="Monday">Monday</SelectItem>
                         <SelectItem value="Tuesday">Tuesday</SelectItem>
                         <SelectItem value="Wednesday">Wednesday</SelectItem>
@@ -310,7 +310,7 @@ const AddClassModal = ({ isOpen, onClose, department, day, timeSlot }: AddClassM
                         <SelectValue placeholder="Select Time" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">Select Time</SelectItem>
+                        
                         <SelectItem value="08:00-09:00">08:00-09:00</SelectItem>
                         <SelectItem value="09:00-10:00">09:00-10:00</SelectItem>
                         <SelectItem value="10:15-11:15">10:15-11:15</SelectItem>
