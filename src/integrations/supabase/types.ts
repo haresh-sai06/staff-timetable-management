@@ -175,6 +175,7 @@ export type Database = {
           code: string
           credits: number
           department: string
+          departments: string[] | null
           id: string
           is_active: boolean | null
           lab_duration: number | null
@@ -186,6 +187,7 @@ export type Database = {
           code: string
           credits: number
           department: string
+          departments?: string[] | null
           id: string
           is_active?: boolean | null
           lab_duration?: number | null
@@ -197,6 +199,7 @@ export type Database = {
           code?: string
           credits?: number
           department?: string
+          departments?: string[] | null
           id?: string
           is_active?: boolean | null
           lab_duration?: number | null

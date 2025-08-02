@@ -17,24 +17,26 @@ interface AddSubjectProps {
 }
 
 const AddSubject = ({ onClose, onSave }: AddSubjectProps) => {
-  const [formData, setFormData] = useState<Tables<"subjects">>({
+  const [formData, setFormData] = useState({
     id: crypto.randomUUID(),
     name: "",
     code: "",
     department: "CSE",
+    departments: ["CSE"],
     credits: 3,
-    type: null,
-    lab_duration: null,
-    year: null,
+    type: "lecture",
+    lab_duration: 0,
+    year: 1,
     is_active: true,
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const departments = ["CSE", "ECE", "MECH", "CIVIL", "EEE"];
-  const subjectTypes = ["lecture", "lab", "seminar"];
+  const subjectTypes = ["lecture", "lab"];
   const years = [1, 2, 3, 4];
+  const [selectedDepartments, setSelectedDepartments] = useState<string[]>(["CSE"]);
 
-  const handleInputChange = (field: keyof Tables<"subjects">, value: string | number | boolean | null) => {
+  const handleInputChange = (field: string, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
@@ -42,8 +44,8 @@ const AddSubject = ({ onClose, onSave }: AddSubjectProps) => {
     e.preventDefault();
     setIsSubmitting(true);
 
-    const requiredFields = ["name", "code", "department", "credits"];
-    const missingFields = requiredFields.filter(field => !formData[field as keyof Tables<"subjects">]);
+    const requiredFields = ["name", "code", "credits"];
+    const missingFields = requiredFields.filter(field => !formData[field as keyof typeof formData]);
     
     if (missingFields.length > 0) {
       toast.error(`Please fill in all required fields: ${missingFields.join(", ")}`);
@@ -59,6 +61,7 @@ const AddSubject = ({ onClose, onSave }: AddSubjectProps) => {
           name: formData.name,
           code: formData.code,
           department: formData.department,
+          departments: selectedDepartments,
           credits: formData.credits,
           type: formData.type,
           lab_duration: formData.lab_duration,
@@ -127,22 +130,31 @@ const AddSubject = ({ onClose, onSave }: AddSubjectProps) => {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="department" className="text-foreground">Department</Label>
-                  <Select
-                    value={formData.department}
-                    onValueChange={(value) => handleInputChange("department", value)}
-                  >
-                    <SelectTrigger className="bg-card/80 border-border">
-                      <SelectValue placeholder="Select department" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {departments.map((dept) => (
-                        <SelectItem key={dept} value={dept}>
+                  <Label className="text-foreground">Departments (Can select multiple)</Label>
+                  <div className="space-y-2">
+                    {departments.map((dept) => (
+                      <div key={dept} className="flex items-center space-x-2">
+                        <input 
+                          type="checkbox" 
+                          id={dept}
+                          checked={selectedDepartments.includes(dept)}
+                          onChange={(e) => {
+                            const isChecked = e.target.checked;
+                            if (isChecked) {
+                              setSelectedDepartments([...selectedDepartments, dept]);
+                            } else {
+                              setSelectedDepartments(selectedDepartments.filter(d => d !== dept));
+                            }
+                            handleInputChange("department", selectedDepartments[0] || dept);
+                          }}
+                          className="rounded border-gray-300"
+                        />
+                        <Label htmlFor={dept} className="text-sm font-normal text-foreground">
                           {dept}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                        </Label>
+                      </div>
+                    ))}
+                  </div>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="credits" className="text-foreground">Credits</Label>
@@ -160,14 +172,13 @@ const AddSubject = ({ onClose, onSave }: AddSubjectProps) => {
                 <div className="space-y-2">
                   <Label htmlFor="type" className="text-foreground">Type</Label>
                   <Select
-                    value={formData.type || ""}
-                    onValueChange={(value) => handleInputChange("type", value || null)}
+                    value={formData.type}
+                    onValueChange={(value) => handleInputChange("type", value)}
                   >
                     <SelectTrigger className="bg-card/80 border-border">
                       <SelectValue placeholder="Select type" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="none">None</SelectItem>
                       {subjectTypes.map((type) => (
                         <SelectItem key={type} value={type}>
                           {type.charAt(0).toUpperCase() + type.slice(1)}
@@ -176,29 +187,31 @@ const AddSubject = ({ onClose, onSave }: AddSubjectProps) => {
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="lab_duration" className="text-foreground">Lab Duration (hours)</Label>
-                  <Input
-                    id="lab_duration"
-                    type="number"
-                    value={formData.lab_duration || ""}
-                    onChange={(e) => handleInputChange("lab_duration", e.target.value ? parseInt(e.target.value) : null)}
-                    min="0"
-                    max="10"
-                    className="bg-card/80 border-border"
-                  />
-                </div>
+                {formData.type === 'lab' && (
+                  <div className="space-y-2">
+                    <Label htmlFor="lab_duration" className="text-foreground">Lab Duration (periods) *</Label>
+                    <Input
+                      id="lab_duration"
+                      type="number"
+                      value={formData.lab_duration}
+                      onChange={(e) => handleInputChange("lab_duration", parseInt(e.target.value) || 0)}
+                      min="1"
+                      max="6"
+                      required
+                      className="bg-card/80 border-border"
+                    />
+                  </div>
+                )}
                 <div className="space-y-2">
                   <Label htmlFor="year" className="text-foreground">Year</Label>
                   <Select
-                    value={formData.year?.toString() || ""}
-                    onValueChange={(value) => handleInputChange("year", value ? parseInt(value) : null)}
+                    value={formData.year.toString()}
+                    onValueChange={(value) => handleInputChange("year", parseInt(value))}
                   >
                     <SelectTrigger className="bg-card/80 border-border">
                       <SelectValue placeholder="Select year" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="none">None</SelectItem>
                       {years.map((year) => (
                         <SelectItem key={year} value={year.toString()}>
                           Year {year}

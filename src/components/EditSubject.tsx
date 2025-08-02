@@ -18,24 +18,26 @@ interface EditSubjectProps {
 }
 
 const EditSubject = ({ subject, onClose, onSave }: EditSubjectProps) => {
-  const [formData, setFormData] = useState<Tables<"subjects">>({
+  const [formData, setFormData] = useState({
     id: subject?.id || crypto.randomUUID(),
     name: subject?.name || "",
     code: subject?.code || "",
     department: subject?.department || "CSE",
+    departments: subject?.departments || [subject?.department || "CSE"],
     credits: subject?.credits || 3,
-    type: subject?.type || null,
-    lab_duration: subject?.lab_duration || null,
-    year: subject?.year || null,
+    type: subject?.type || "lecture",
+    lab_duration: subject?.lab_duration || 0,
+    year: subject?.year || 1,
     is_active: subject?.is_active ?? true,
   });
+  const [selectedDepartments, setSelectedDepartments] = useState<string[]>(subject?.departments || [subject?.department || "CSE"]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const departments = ["CSE", "ECE", "MECH", "CIVIL", "EEE"];
-  const subjectTypes = ["lecture", "lab", "seminar"];
+  const subjectTypes = ["lecture", "lab"];
   const years = [1, 2, 3, 4];
 
-  const handleInputChange = (field: keyof Tables<"subjects">, value: string | number | boolean | null) => {
+  const handleInputChange = (field: string, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
@@ -43,8 +45,8 @@ const EditSubject = ({ subject, onClose, onSave }: EditSubjectProps) => {
     e.preventDefault();
     setIsSubmitting(true);
 
-    const requiredFields = ["name", "code", "department", "credits"];
-    const missingFields = requiredFields.filter(field => !formData[field as keyof Tables<"subjects">]);
+    const requiredFields = ["name", "code", "credits"];
+    const missingFields = requiredFields.filter(field => !formData[field as keyof typeof formData]);
     
     if (missingFields.length > 0) {
       toast.error(`Please fill in all required fields: ${missingFields.join(", ")}`);
@@ -59,6 +61,7 @@ const EditSubject = ({ subject, onClose, onSave }: EditSubjectProps) => {
           name: formData.name,
           code: formData.code,
           department: formData.department,
+          departments: selectedDepartments,
           credits: formData.credits,
           type: formData.type,
           lab_duration: formData.lab_duration,

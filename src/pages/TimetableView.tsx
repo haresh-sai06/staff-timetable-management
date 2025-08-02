@@ -373,8 +373,8 @@ const TimetableView = () => {
         isOpen={showAddClassModal}
         onClose={() => setShowAddClassModal(false)}
         department={selectedDepartment}
-        day={addClassContext.day}
-        timeSlot={addClassContext.timeSlot}
+        semester="Current"
+        onRefresh={() => {}}
       />
 
       <EditClassModal

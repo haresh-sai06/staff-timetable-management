@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/form";
 import { Badge } from "@/components/ui/badge";
 import { X } from "lucide-react";
+import SubjectDropdownSelector from "./SubjectDropdownSelector";
 
 const staffSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -68,7 +69,7 @@ export const StaffForm: React.FC<StaffFormProps> = ({
   initialData,
   onCancel,
 }) => {
-  const [newSubject, setNewSubject] = React.useState("");
+  const [subjects, setSubjects] = React.useState<string[]>(initialData?.subjects || []);
 
   const form = useForm<StaffFormData>({
     resolver: zodResolver(staffSchema),
@@ -77,26 +78,18 @@ export const StaffForm: React.FC<StaffFormProps> = ({
       email: initialData?.email || "",
       department: initialData?.department || "",
       role: initialData?.role || "",
-      subjects: initialData?.subjects || [],
+      subjects: subjects,
       maxHours: initialData?.maxHours || 18,
     },
   });
 
-  const subjects = form.watch("subjects") || [];
-
-  const addSubject = () => {
-    if (newSubject.trim() && !subjects.includes(newSubject.trim())) {
-      form.setValue("subjects", [...subjects, newSubject.trim()]);
-      setNewSubject("");
-    }
-  };
-
-  const removeSubject = (subjectToRemove: string) => {
-    form.setValue("subjects", subjects.filter(s => s !== subjectToRemove));
-  };
+  React.useEffect(() => {
+    form.setValue("subjects", subjects);
+  }, [subjects, form]);
 
   const handleSubmit = (data: StaffFormData) => {
-    onSubmit(data);
+    const formDataWithSubjects = { ...data, subjects };
+    onSubmit(formDataWithSubjects);
   };
 
   return (
@@ -202,37 +195,11 @@ export const StaffForm: React.FC<StaffFormProps> = ({
         />
 
         <div className="space-y-3">
-          <Label>Subjects</Label>
-          <div className="flex gap-2">
-            <Input
-              placeholder="Add subject code/name"
-              value={newSubject}
-              onChange={(e) => setNewSubject(e.target.value)}
-              onKeyPress={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  addSubject();
-                }
-              }}
-            />
-            <Button type="button" onClick={addSubject} variant="outline">
-              Add
-            </Button>
-          </div>
-          
-          {subjects.length > 0 && (
-            <div className="flex flex-wrap gap-2">
-              {subjects.map((subject) => (
-                <Badge key={subject} variant="secondary" className="flex items-center gap-1">
-                  {subject}
-                  <X 
-                    className="h-3 w-3 cursor-pointer" 
-                    onClick={() => removeSubject(subject)}
-                  />
-                </Badge>
-              ))}
-            </div>
-          )}
+          <Label>Handling Subjects</Label>
+          <SubjectDropdownSelector 
+            selectedSubjects={subjects}
+            onSubjectsChange={setSubjects}
+          />
         </div>
 
         <div className="flex gap-3 pt-4">

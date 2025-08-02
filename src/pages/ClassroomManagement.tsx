@@ -1,4 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import AddClassroomModal from "@/components/AddClassroomModal";
 import { motion } from "framer-motion";
 import { MapPin, Plus, Search, Edit, Trash2, Users, Monitor, Beaker, Calendar, BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -32,62 +34,8 @@ const ClassroomManagement = () => {
   const [viewScheduleModalOpen, setViewScheduleModalOpen] = useState(false);
   const [bookRoomModalOpen, setBookRoomModalOpen] = useState(false);
   const [selectedClassroom, setSelectedClassroom] = useState<Classroom | null>(null);
-  const [classrooms, setClassrooms] = useState<Classroom[]>([
-    {
-      id: "1",
-      name: "CSE-101",
-      capacity: 60,
-      type: "Lecture Hall",
-      department: "CSE",
-      equipment: ["Projector", "Audio System", "Whiteboard"],
-      isActive: true,
-      currentBookings: 25,
-      maxBookings: 30
-    },
-    {
-      id: "2",
-      name: "CSE-Lab1",
-      capacity: 30,
-      type: "Computer Lab",
-      department: "CSE",
-      equipment: ["30 Computers", "Server", "Network Equipment"],
-      isActive: true,
-      currentBookings: 20,
-      maxBookings: 25
-    },
-    {
-      id: "3",
-      name: "ECE-201",
-      capacity: 45,
-      type: "Lecture Hall",
-      department: "ECE",
-      equipment: ["Smart Board", "Audio System"],
-      isActive: true,
-      currentBookings: 18,
-      maxBookings: 30
-    },
-    {
-      id: "4",
-      name: "MECH-Workshop",
-      capacity: 25,
-      type: "Workshop",
-      department: "MECH",
-      equipment: ["Lathe Machines", "Drilling Machines", "Safety Equipment"],
-      isActive: true,
-      currentBookings: 15,
-      maxBookings: 20
-    },
-    {
-      id: "5",
-      name: "Seminar-Hall",
-      capacity: 150,
-      type: "Seminar Room",
-      equipment: ["Stage", "Audio-Visual", "Air Conditioning"],
-      isActive: true,
-      currentBookings: 8,
-      maxBookings: 15
-    }
-  ]);
+  const [classrooms, setClassrooms] = useState<Classroom[]>([]);
+  const [addModalOpen, setAddModalOpen] = useState(false);
   const { toast } = useToast();
 
   const roomTypes = ["all", "Lecture Hall", "Computer Lab", "Workshop", "Seminar Room"];
@@ -100,12 +48,45 @@ const ClassroomManagement = () => {
   });
 
   const handleAddClassroom = () => {
-    toast({
-      title: "Add Classroom",
-      description: "Opening classroom creation form...",
-    });
-    console.log("Adding new classroom");
+    setAddModalOpen(true);
   };
+
+  const fetchClassrooms = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('classrooms')
+        .select('*')
+        .eq('is_active', true)
+        .order('name');
+
+      if (error) throw error;
+      
+      const formattedClassrooms = data?.map(room => ({
+        id: room.id,
+        name: room.name,
+        capacity: room.capacity,
+        type: room.type,
+        department: room.department,
+        equipment: room.facilities || [],
+        isActive: room.is_active,
+        currentBookings: 0, // This would need to be calculated from timetable_entries
+        maxBookings: 30 // This could be a calculated field
+      })) || [];
+      
+      setClassrooms(formattedClassrooms);
+    } catch (error: any) {
+      console.error('Error fetching classrooms:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch classrooms: " + error.message,
+        variant: "destructive"
+      });
+    }
+  };
+
+  useEffect(() => {
+    fetchClassrooms();
+  }, []);
 
   const handleViewSchedule = (room: Classroom) => {
     console.log("Opening schedule for room:", room.name);
@@ -469,6 +450,12 @@ const ClassroomManagement = () => {
         isOpen={bookRoomModalOpen}
         onClose={() => setBookRoomModalOpen(false)}
         classroom={selectedClassroom}
+      />
+
+      <AddClassroomModal 
+        isOpen={addModalOpen}
+        onClose={() => setAddModalOpen(false)}
+        onSuccess={fetchClassrooms}
       />
     </div>
   );
