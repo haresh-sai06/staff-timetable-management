@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import Navigation from "@/components/Navigation";
-import StaffForm from "@/components/StaffForm";
+import { StaffForm } from "@/components/StaffForm";
 import StaffActions from "@/components/StaffActions";
 import TutorAssignmentModal from "@/components/TutorAssignmentModal";
 import { supabase } from "@/integrations/supabase/client";
@@ -312,8 +312,68 @@ const StaffManagement = () => {
         <Navigation />
         <div className="container mx-auto px-4 py-8">
           <StaffForm
-            staff={editingStaff || undefined}
-            onSave={handleFormSave}
+            initialData={editingStaff ? {
+              name: editingStaff.name,
+              email: editingStaff.email,
+              department: editingStaff.department,
+              role: editingStaff.role,
+              subjects: editingStaff.subjects,
+              maxHours: editingStaff.max_hours
+            } : undefined}
+            onSubmit={async (data) => {
+              try {
+                if (editingStaff) {
+                  // Update existing staff
+                  const { error } = await supabase
+                    .from('staff')
+                    .update({
+                      name: data.name,
+                      email: data.email,
+                      department: data.department,
+                      role: data.role,
+                      subjects: data.subjects || [],
+                      max_hours: data.maxHours || 18
+                    })
+                    .eq('id', editingStaff.id);
+
+                  if (error) throw error;
+
+                  toast({
+                    title: "Success",
+                    description: "Staff member updated successfully",
+                  });
+                } else {
+                  // Create new staff
+                  const { error } = await supabase
+                    .from('staff')
+                    .insert({
+                      name: data.name,
+                      email: data.email,
+                      department: data.department,
+                      role: data.role,
+                      subjects: data.subjects || [],
+                      max_hours: data.maxHours || 18,
+                      current_hours: 0,
+                      is_active: true
+                    });
+
+                  if (error) throw error;
+
+                  toast({
+                    title: "Success",
+                    description: "Staff member added successfully",
+                  });
+                }
+                handleFormSave();
+              } catch (error: any) {
+                console.error('Error saving staff:', error);
+                toast({
+                  title: "Error",
+                  description: "Failed to save staff member",
+                  variant: "destructive",
+                });
+              }
+            }}
             onCancel={handleFormCancel}
           />
         </div>
