@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import Navigation from "@/components/Navigation";
-import { StaffForm } from "@/components/StaffForm";
+import StaffForm from "@/components/StaffForm";
 import StaffActions from "@/components/StaffActions";
 import TutorAssignmentModal from "@/components/TutorAssignmentModal";
 import { supabase } from "@/integrations/supabase/client";

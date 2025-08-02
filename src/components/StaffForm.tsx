@@ -249,3 +249,5 @@ export const StaffForm: React.FC<StaffFormProps> = ({
     </Form>
   );
 };
+
+export default StaffForm;
