@@ -53,6 +53,48 @@ export type Database = {
         }
         Relationships: []
       }
+      classrooms: {
+        Row: {
+          building: string | null
+          capacity: number
+          created_at: string
+          department: string
+          facilities: string[] | null
+          floor: number | null
+          id: string
+          is_active: boolean
+          name: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          building?: string | null
+          capacity?: number
+          created_at?: string
+          department: string
+          facilities?: string[] | null
+          floor?: number | null
+          id?: string
+          is_active?: boolean
+          name: string
+          type?: string
+          updated_at?: string
+        }
+        Update: {
+          building?: string | null
+          capacity?: number
+          created_at?: string
+          department?: string
+          facilities?: string[] | null
+          floor?: number | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -86,173 +128,143 @@ export type Database = {
         }
         Relationships: []
       }
-subjects: {
+      staff: {
         Row: {
-          id: string
-          name: string
-          code: string
-          department: string
-          credits: number
-          type: string | null
-          lab_duration: number | null
-          year: number | null
-          is_active: boolean
-          semester: string | null
-          prerequisites: string[] | null
-          description: string | null
           created_at: string | null
+          current_hours: number | null
+          department: string
+          email: string
+          id: string
+          is_active: boolean | null
+          max_hours: number | null
+          name: string
+          role: string
+          subjects: string[] | null
           updated_at: string | null
         }
         Insert: {
-          id?: string
-          name: string
-          code: string
-          department: string
-          credits: number
-          type?: string | null
-          lab_duration?: number | null
-          year?: number | null
-          is_active?: boolean
-          semester?: string | null
-          prerequisites?: string[] | null
-          description?: string | null
           created_at?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          id?: string
-          name?: string
-          code?: string
-          department?: string
-          credits?: number
-          type?: string | null
-          lab_duration?: number | null
-          year?: number | null
-          is_active?: boolean
-          semester?: string | null
-          prerequisites?: string[] | null
-          description?: string | null
-          created_at?: string | null
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
-      staff: {
-        Row: {
-          id: string
-          name: string
-          email: string
+          current_hours?: number | null
           department: string
-          role: string
-          max_hours: number
-          current_hours: number
-          subjects: string[] | null
-          is_active: boolean
-        }
-        Insert: {
-          id?: string
-          name: string
           email: string
-          department: string
+          id?: string
+          is_active?: boolean | null
+          max_hours?: number | null
+          name: string
           role: string
-          max_hours: number
-          current_hours: number
           subjects?: string[] | null
-          is_active?: boolean
+          updated_at?: string | null
         }
         Update: {
-          id?: string
-          name?: string
+          created_at?: string | null
+          current_hours?: number | null
+          department?: string
           email?: string
-          department?: string
+          id?: string
+          is_active?: boolean | null
+          max_hours?: number | null
+          name?: string
           role?: string
-          max_hours?: number
-          current_hours?: number
           subjects?: string[] | null
-          is_active?: boolean
+          updated_at?: string | null
         }
         Relationships: []
       }
-classrooms: {
+      subjects: {
         Row: {
+          code: string
+          credits: number
+          department: string
           id: string
+          is_active: boolean | null
+          lab_duration: number | null
           name: string
-          capacity: number
-          type: string
-          is_active: boolean
+          type: string | null
+          year: number | null
         }
         Insert: {
+          code: string
+          credits: number
+          department: string
           id: string
+          is_active?: boolean | null
+          lab_duration?: number | null
           name: string
-          capacity: number
-          type: string
-          is_active?: boolean
+          type?: string | null
+          year?: number | null
         }
         Update: {
+          code?: string
+          credits?: number
+          department?: string
           id?: string
+          is_active?: boolean | null
+          lab_duration?: number | null
           name?: string
-          capacity?: number
-          type?: string
-          is_active?: boolean
+          type?: string | null
+          year?: number | null
         }
         Relationships: []
       }
       timetable_entries: {
         Row: {
-          id: string
-          subject_code: string
-          staff_id: string
-          classroom_id: string
-          department: string
-          semester: string
-          student_group: string
+          classroom_id: string | null
+          created_at: string | null
           day: string
+          department: string
+          id: string
+          semester: string
+          staff_id: string | null
+          student_group: string
+          subject_code: string | null
           time_slot: string
-          created_at: string
         }
         Insert: {
-          id?: string
-          subject_code: string
-          staff_id: string
-          classroom_id: string
-          department: string
-          semester: string
-          student_group: string
+          classroom_id?: string | null
+          created_at?: string | null
           day: string
+          department: string
+          id?: string
+          semester: string
+          staff_id?: string | null
+          student_group: string
+          subject_code?: string | null
           time_slot: string
-          created_at?: string
         }
         Update: {
-          id?: string
-          subject_code?: string
-          staff_id?: string
-          classroom_id?: string
-          department?: string
-          semester?: string
-          student_group?: string
+          classroom_id?: string | null
+          created_at?: string | null
           day?: string
+          department?: string
+          id?: string
+          semester?: string
+          staff_id?: string | null
+          student_group?: string
+          subject_code?: string | null
           time_slot?: string
-          created_at?: string
         }
         Relationships: [
           {
-            foreignKeyName: "timetable_entries_subject_code_fkey"
-            columns: ["subject_code"]
-            referencedRelation: "subjects"
-            referencedColumns: ["code"]
+            foreignKeyName: "timetable_entries_classroom_id_fkey"
+            columns: ["classroom_id"]
+            isOneToOne: false
+            referencedRelation: "classrooms"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "timetable_entries_staff_id_fkey"
             columns: ["staff_id"]
+            isOneToOne: false
             referencedRelation: "staff"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "timetable_entries_classroom_id_fkey"
-            columns: ["classroom_id"]
-            referencedRelation: "classrooms"
-            referencedColumns: ["id"]
-          }
+            foreignKeyName: "timetable_entries_subject_code_fkey"
+            columns: ["subject_code"]
+            isOneToOne: false
+            referencedRelation: "subjects"
+            referencedColumns: ["code"]
+          },
         ]
       }
       tutor_assignments: {
