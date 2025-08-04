@@ -56,12 +56,9 @@ const departments = [
 ];
 
 const roles = [
-  "Professor",
-  "Associate Professor", 
-  "Assistant Professor",
-  "Lecturer",
-  "Lab Assistant",
-  "Guest Faculty"
+  "Prof",
+  "AssocProf", 
+  "AsstProf"
 ];
 
 export const StaffForm: React.FC<StaffFormProps> = ({
