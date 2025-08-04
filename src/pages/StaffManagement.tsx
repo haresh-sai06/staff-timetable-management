@@ -42,6 +42,7 @@ const StaffManagement = () => {
   const [user, setUser] = useState<User | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [staffData, setStaffData] = useState<Staff[]>([]);
+  const [subjects, setSubjects] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingStaff, setEditingStaff] = useState<Staff | null>(null);
@@ -89,6 +90,7 @@ const StaffManagement = () => {
           }
 
           await fetchStaff();
+          await fetchSubjects();
         }
       } catch (error) {
         console.error('Error in checkAuthAndFetchData:', error);
@@ -126,6 +128,7 @@ const StaffManagement = () => {
                 });
                 
                 await fetchStaff();
+                await fetchSubjects();
               } catch (err) {
                 console.error('Error fetching profile on auth change:', err);
               }
@@ -174,6 +177,20 @@ const StaffManagement = () => {
         description: "Failed to fetch staff data",
         variant: "destructive",
       });
+    }
+  };
+
+  const fetchSubjects = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('subjects')
+        .select('*')
+        .eq('is_active', true);
+
+      if (error) throw error;
+      setSubjects(data || []);
+    } catch (error: any) {
+      console.error('Error fetching subjects:', error);
     }
   };
 
@@ -598,11 +615,14 @@ const StaffManagement = () => {
                   <div>
                     <p className="text-sm font-medium text-foreground mb-2">Assigned Subjects:</p>
                     <div className="flex flex-wrap gap-1">
-                      {staff.subjects.map((subject, idx) => (
-                        <Badge key={idx} variant="secondary" className="text-xs bg-muted text-muted-foreground">
-                          {subject}
-                        </Badge>
-                      ))}
+                      {staff.subjects.map((subjectId, idx) => {
+                        const subject = subjects.find(s => s.id === subjectId);
+                        return (
+                          <Badge key={idx} variant="secondary" className="text-xs bg-muted text-muted-foreground">
+                            {subject ? `${subject.name} (${subject.code})` : subjectId}
+                          </Badge>
+                        );
+                      })}
                     </div>
                   </div>
                 </CardContent>
