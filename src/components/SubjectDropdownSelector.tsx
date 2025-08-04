@@ -44,8 +44,8 @@ const SubjectDropdownSelector = ({ selectedSubjects, onSubjectsChange }: Subject
     const subject = availableSubjects.find(s => s.id === selectedSubjectId);
     if (!subject) return;
     
-    if (!selectedSubjects.includes(subject.name)) {
-      onSubjectsChange([...selectedSubjects, subject.name]);
+    if (!selectedSubjects.includes(subject.id)) {
+      onSubjectsChange([...selectedSubjects, subject.id]);
     }
     setSelectedSubjectId("");
   };
@@ -55,7 +55,7 @@ const SubjectDropdownSelector = ({ selectedSubjects, onSubjectsChange }: Subject
   };
 
   const unselectedSubjects = availableSubjects.filter(
-    subject => !selectedSubjects.includes(subject.name)
+    subject => !selectedSubjects.includes(subject.id)
   );
 
   if (loading) {
@@ -94,18 +94,21 @@ const SubjectDropdownSelector = ({ selectedSubjects, onSubjectsChange }: Subject
       
       {selectedSubjects.length > 0 && (
         <div className="flex flex-wrap gap-2">
-          {selectedSubjects.map((subject, index) => (
-            <Badge key={index} variant="secondary" className="flex items-center gap-1">
-              {subject}
-              <button
-                type="button"
-                onClick={() => handleRemoveSubject(subject)}
-                className="ml-1 hover:bg-red-500 hover:text-white rounded-full p-0.5"
-              >
-                <X className="h-3 w-3" />
-              </button>
-            </Badge>
-          ))}
+          {selectedSubjects.map((subjectId, index) => {
+            const subject = availableSubjects.find(s => s.id === subjectId);
+            return (
+              <Badge key={index} variant="secondary" className="flex items-center gap-1">
+                {subject ? `${subject.name} (${subject.code})` : subjectId}
+                <button
+                  type="button"
+                  onClick={() => handleRemoveSubject(subjectId)}
+                  className="ml-1 hover:bg-red-500 hover:text-white rounded-full p-0.5"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </Badge>
+            );
+          })}
         </div>
       )}
     </div>

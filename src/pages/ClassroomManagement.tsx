@@ -349,27 +349,6 @@ const ClassroomManagement = () => {
                       )}
                     </div>
 
-                    {/* Utilization */}
-                    <div className={`p-3 rounded-lg ${getUtilizationBg(room.currentBookings, room.maxBookings)}`}>
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm font-medium">Weekly Utilization</span>
-                        <span className={`text-sm font-bold ${getUtilizationColor(room.currentBookings, room.maxBookings)}`}>
-                          {room.currentBookings}/{room.maxBookings} slots
-                        </span>
-                      </div>
-                      <div className="w-full bg-white/50 rounded-full h-2">
-                        <motion.div
-                          initial={{ width: 0 }}
-                          animate={{ width: `${(room.currentBookings / room.maxBookings) * 100}%` }}
-                          transition={{ delay: 0.5 + index * 0.1, duration: 0.8 }}
-                          className={`h-2 rounded-full ${
-                            room.currentBookings >= room.maxBookings * 0.9 ? "bg-red-500" :
-                            room.currentBookings >= room.maxBookings * 0.75 ? "bg-orange-500" :
-                            "bg-green-500"
-                          }`}
-                        />
-                      </div>
-                    </div>
 
                     {/* Equipment */}
                     <div>
