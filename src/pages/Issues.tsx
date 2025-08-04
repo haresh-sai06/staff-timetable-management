@@ -32,15 +32,21 @@ const Issues = () => {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <div>
-              <IssueForm onIssueSubmitted={handleIssueSubmitted} />
-            </div>
-            
-            <div>
+          {localStorage.getItem("userRole") === "admin" ? (
+            <div className="w-full">
               <IssueList refreshTrigger={refreshTrigger} />
             </div>
-          </div>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              <div>
+                <IssueForm onIssueSubmitted={handleIssueSubmitted} />
+              </div>
+              
+              <div>
+                <IssueList refreshTrigger={refreshTrigger} />
+              </div>
+            </div>
+          )}
         </motion.div>
       </div>
     </div>

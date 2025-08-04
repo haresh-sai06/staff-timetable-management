@@ -336,7 +336,10 @@ const StaffManagement = () => {
                     })
                     .eq('id', editingStaff.id);
 
-                  if (error) throw error;
+                  if (error) {
+                    console.error('Error updating staff:', error);
+                    throw error;
+                  }
 
                   toast({
                     title: "Success",

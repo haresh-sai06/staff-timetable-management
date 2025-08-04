@@ -312,7 +312,7 @@ const ClassroomManagement = () => {
                         <div>
                           <CardTitle className="text-lg">{room.name}</CardTitle>
                           <p className="text-sm text-muted-foreground">
-                            Capacity: {room.capacity} students
+                            {room.type} • {room.department}
                           </p>
                         </div>
                       </div>
