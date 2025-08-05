@@ -71,34 +71,7 @@ const TimetableGrid = ({
 
   const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
-  const mockTimetableData: TimetableEntry[] = [
-    {
-      id: "1",
-      day: "Monday",
-      timeSlot: "09:15-10:10",
-      subject: "Data Structures",
-      subjectCode: "CS8391",
-      staff: "Dr. Priya Sharma",
-      staffRole: "AsstProf",
-      classroom: "CSE-101",
-      studentGroup: "CSE-3A",
-      type: "theory",
-      duration: 1
-    },
-    {
-      id: "2",
-      day: "Tuesday",
-      timeSlot: "13:00-14:50",
-      subject: "Database Lab",
-      subjectCode: "CS8392",
-      staff: "Prof. Rajesh Kumar",
-      staffRole: "Prof",
-      classroom: "CSE-Lab1",
-      studentGroup: "CSE-3A",
-      type: "lab",
-      duration: 2
-    }
-  ];
+  const mockTimetableData: TimetableEntry[] = [];
 
   useEffect(() => {
     const role = localStorage.getItem("userRole");
@@ -245,27 +218,25 @@ const TimetableGrid = ({
                                   : 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800'
                               } ${entry.hasConflict ? 'ring-2 ring-red-500' : ''}`}>
                                 
-                                {/* Admin Actions */}
-                                {isAdmin && (
-                                  <div className="absolute top-2 right-2 flex space-x-1 z-10">
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      className="h-7 w-7 p-0 bg-white/90 hover:bg-white shadow-sm"
-                                      onClick={(e) => handleEditClass(entry.id, e)}
-                                    >
-                                      <Edit2 className="h-3 w-3" />
-                                    </Button>
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      className="h-7 w-7 p-0 bg-white/90 hover:bg-red-100 shadow-sm"
-                                      onClick={(e) => handleDeleteClick(entry.id, e)}
-                                    >
-                                      <Trash2 className="h-3 w-3 text-red-600" />
-                                    </Button>
-                                  </div>
-                                )}
+                                {/* Hover Actions */}
+                                <div className="absolute top-2 right-2 flex space-x-1 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-7 w-7 p-0 bg-white/90 hover:bg-white shadow-sm"
+                                    onClick={(e) => handleEditClass(entry.id, e)}
+                                  >
+                                    <Edit2 className="h-3 w-3" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-7 w-7 p-0 bg-white/90 hover:bg-red-100 shadow-sm"
+                                    onClick={(e) => handleDeleteClick(entry.id, e)}
+                                  >
+                                    <Trash2 className="h-3 w-3 text-red-600" />
+                                  </Button>
+                                </div>
 
                                 <div className="space-y-2 pr-16">
                                   <div className="flex items-center justify-between">
@@ -393,27 +364,25 @@ const TimetableGrid = ({
                                 : 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800'
                             } ${entry.hasConflict ? 'ring-2 ring-red-500' : ''}`}>
                               
-                              {/* Admin Actions - Better positioning */}
-                              {isAdmin && (
-                                <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity flex space-x-1 z-10">
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="h-6 w-6 p-0 bg-white/90 hover:bg-white shadow-sm"
-                                    onClick={(e) => handleEditClass(entry.id, e)}
-                                  >
-                                    <Edit2 className="h-3 w-3" />
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="h-6 w-6 p-0 bg-white/90 hover:bg-red-100 shadow-sm"
-                                    onClick={(e) => handleDeleteClick(entry.id, e)}
-                                  >
-                                    <Trash2 className="h-3 w-3 text-red-600" />
-                                  </Button>
-                                </div>
-                              )}
+                               {/* Hover Actions - Always visible on hover */}
+                              <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity flex space-x-1 z-10">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-6 w-6 p-0 bg-white/90 hover:bg-white shadow-sm"
+                                  onClick={(e) => handleEditClass(entry.id, e)}
+                                >
+                                  <Edit2 className="h-3 w-3" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-6 w-6 p-0 bg-white/90 hover:bg-red-100 shadow-sm"
+                                  onClick={(e) => handleDeleteClick(entry.id, e)}
+                                >
+                                  <Trash2 className="h-3 w-3 text-red-600" />
+                                </Button>
+                              </div>
 
                               <div className="space-y-2 h-full flex flex-col pr-2">
                                 <div className="flex items-center justify-between">

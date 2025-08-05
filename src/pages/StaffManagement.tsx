@@ -362,6 +362,10 @@ const StaffManagement = () => {
                     title: "Success",
                     description: "Staff member updated successfully",
                   });
+                  
+                  // Refresh both staff and subjects data
+                  await fetchStaff();
+                  await fetchSubjects();
                 } else {
                   // Create new staff
                   const { error } = await supabase
