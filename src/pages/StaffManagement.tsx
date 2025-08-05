@@ -339,24 +339,35 @@ const StaffManagement = () => {
             } : undefined}
             onSubmit={async (data) => {
               try {
+                console.log('Form data received:', data);
+                console.log('Subjects being saved:', data.subjects);
+                
                 if (editingStaff) {
                   // Update existing staff
-                  const { error } = await supabase
+                  const updateData = {
+                    name: data.name,
+                    email: data.email,
+                    department: data.department,
+                    role: data.role,
+                    subjects: data.subjects || [],
+                    max_hours: data.maxHours || 18,
+                    updated_at: new Date().toISOString()
+                  };
+                  
+                  console.log('Update data for staff:', updateData);
+                  
+                  const { data: updatedStaff, error } = await supabase
                     .from('staff')
-                    .update({
-                      name: data.name,
-                      email: data.email,
-                      department: data.department,
-                      role: data.role,
-                      subjects: data.subjects || [],
-                      max_hours: data.maxHours || 18
-                    })
-                    .eq('id', editingStaff.id);
+                    .update(updateData)
+                    .eq('id', editingStaff.id)
+                    .select();
 
                   if (error) {
-                    console.error('Error updating staff:', error);
+                    console.error('Database error updating staff:', error);
                     throw error;
                   }
+
+                  console.log('Staff updated successfully:', updatedStaff);
 
                   toast({
                     title: "Success",
@@ -364,36 +375,50 @@ const StaffManagement = () => {
                   });
                   
                   // Refresh both staff and subjects data
-                  await fetchStaff();
-                  await fetchSubjects();
+                  await Promise.all([fetchStaff(), fetchSubjects()]);
                 } else {
                   // Create new staff
-                  const { error } = await supabase
+                  const insertData = {
+                    name: data.name,
+                    email: data.email,
+                    department: data.department,
+                    role: data.role,
+                    subjects: data.subjects || [],
+                    max_hours: data.maxHours || 18,
+                    current_hours: 0,
+                    is_active: true
+                  };
+                  
+                  console.log('Insert data for new staff:', insertData);
+                  
+                  const { data: newStaff, error } = await supabase
                     .from('staff')
-                    .insert({
-                      name: data.name,
-                      email: data.email,
-                      department: data.department,
-                      role: data.role,
-                      subjects: data.subjects || [],
-                      max_hours: data.maxHours || 18,
-                      current_hours: 0,
-                      is_active: true
-                    });
+                    .insert(insertData)
+                    .select();
 
-                  if (error) throw error;
+                  if (error) {
+                    console.error('Database error creating staff:', error);
+                    throw error;
+                  }
+
+                  console.log('Staff created successfully:', newStaff);
 
                   toast({
                     title: "Success",
                     description: "Staff member added successfully",
                   });
+                  
+                  // Refresh both staff and subjects data
+                  await Promise.all([fetchStaff(), fetchSubjects()]);
                 }
                 handleFormSave();
               } catch (error: any) {
                 console.error('Error saving staff:', error);
+                console.error('Error details:', error.details);
+                console.error('Error message:', error.message);
                 toast({
                   title: "Error",
-                  description: "Failed to save staff member",
+                  description: `Failed to save staff member: ${error.message}`,
                   variant: "destructive",
                 });
               }
