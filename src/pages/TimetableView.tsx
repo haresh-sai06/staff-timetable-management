@@ -21,6 +21,7 @@ import AddClassModal from "@/components/AddClassModal";
 const TimetableView = () => {
   const [selectedDepartment, setSelectedDepartment] = useState("CSE");
   const [selectedSemester, setSelectedSemester] = useState("odd");
+  const [selectedYear, setSelectedYear] = useState("3");
   const [viewMode, setViewMode] = useState("department"); // department, staff, general
   const [showAddEntry, setShowAddEntry] = useState(false);
   const [showAddClassModal, setShowAddClassModal] = useState(false);
@@ -51,6 +52,13 @@ const TimetableView = () => {
   const semesters = [
     { value: "odd", label: "Odd Semester (July - December)" },
     { value: "even", label: "Even Semester (January - June)" },
+  ];
+
+  const years = [
+    { value: "1", label: "1" },
+    { value: "2", label: "2" },
+    { value: "3", label: "3" },
+    { value: "4", label: "4" },
   ];
 
   const viewModes = [
@@ -304,10 +312,13 @@ const TimetableView = () => {
                 setSelectedDepartment={setSelectedDepartment}
                 selectedSemester={selectedSemester}
                 setSelectedSemester={setSelectedSemester}
+                selectedYear={selectedYear}
+                setSelectedYear={setSelectedYear}
                 viewMode={viewMode}
                 setViewMode={setViewMode}
                 departments={departments}
                 semesters={semesters}
+                years={years}
                 viewModes={viewModes}
               />
             </motion.div>
@@ -375,6 +386,8 @@ const TimetableView = () => {
         department={selectedDepartment}
         semester="Current"
         onRefresh={() => {}}
+        day={addClassContext.day}
+        timeSlot={addClassContext.timeSlot}
       />
 
       <EditClassModal

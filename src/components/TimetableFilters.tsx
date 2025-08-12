@@ -10,10 +10,13 @@ interface TimetableFiltersProps {
   setSelectedDepartment: (value: string) => void;
   selectedSemester: string;
   setSelectedSemester: (value: string) => void;
+  selectedYear: string;
+  setSelectedYear: (value: string) => void;
   viewMode: string;
   setViewMode: (value: string) => void;
   departments: Array<{ value: string; label: string }>;
   semesters: Array<{ value: string; label: string }>;
+  years: Array<{ value: string; label: string }>;
   viewModes: Array<{ value: string; label: string }>;
 }
 
@@ -22,10 +25,13 @@ const TimetableFilters = ({
   setSelectedDepartment,
   selectedSemester,
   setSelectedSemester,
+  selectedYear,
+  setSelectedYear,
   viewMode,
   setViewMode,
   departments,
   semesters,
+  years,
   viewModes
 }: TimetableFiltersProps) => {
   return (
@@ -38,10 +44,10 @@ const TimetableFilters = ({
         <CardContent className="p-6">
           <div className="flex items-center space-x-2 mb-4">
             <Filter className="h-5 w-5 text-indigo-600" />
-            <h3 className="font-semibold text-lg text-gray-800">Filters</h3>
+            <h3 className="font-semibold text-lg text-gray-800">View Timetable</h3>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="space-y-2">
               <Label htmlFor="department">Department</Label>
               <Select value={selectedDepartment} onValueChange={setSelectedDepartment}>
@@ -75,6 +81,22 @@ const TimetableFilters = ({
             </div>
 
             <div className="space-y-2">
+              <Label htmlFor="year">Year</Label>
+              <Select value={selectedYear} onValueChange={setSelectedYear}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select year" />
+                </SelectTrigger>
+                <SelectContent>
+                  {years.map((year) => (
+                    <SelectItem key={year.value} value={year.value}>
+                      {year.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
               <Label htmlFor="viewMode">View Mode</Label>
               <Select value={viewMode} onValueChange={setViewMode}>
                 <SelectTrigger>
@@ -94,7 +116,7 @@ const TimetableFilters = ({
           {/* Quick Info */}
           <div className="mt-4 p-3 bg-indigo-50 rounded-lg">
             <p className="text-sm text-indigo-800">
-              <strong>Current Selection:</strong> {departments.find(d => d.value === selectedDepartment)?.label} - {semesters.find(s => s.value === selectedSemester)?.label}
+              <strong>Current Selection:</strong> {departments.find(d => d.value === selectedDepartment)?.label} - {semesters.find(s => s.value === selectedSemester)?.label} - Year {years.find(y => y.value === selectedYear)?.label}
             </p>
           </div>
         </CardContent>

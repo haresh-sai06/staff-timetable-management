@@ -15,17 +15,18 @@ interface AddClassModalProps {
   department: string;
   semester: string;
   onRefresh: () => void;
+  day?: string;
+  timeSlot?: string;
 }
 
-const AddClassModal = ({ isOpen, onClose, department, semester, onRefresh }: AddClassModalProps) => {
+const AddClassModal = ({ isOpen, onClose, department, semester, onRefresh, day, timeSlot }: AddClassModalProps) => {
   const [formData, setFormData] = useState({
     subjectId: "",
     staffId: "",
     classroomId: "",
     studentGroup: "",
-    year: "",
-    day: "",
-    timeSlot: ""
+    day: day || "",
+    timeSlot: timeSlot || ""
   });
   
   const [availableSubjects, setAvailableSubjects] = useState<any[]>([]);
@@ -42,20 +43,18 @@ const AddClassModal = ({ isOpen, onClose, department, semester, onRefresh }: Add
   }, [isOpen, department]);
 
   useEffect(() => {
-    // Filter staff based on selected subject
-    if (formData.subjectId && availableSubjects.length > 0 && availableStaff.length > 0) {
-      const selectedSubject = availableSubjects.find(s => s.id === formData.subjectId);
-      if (selectedSubject) {
-        const subjectName = selectedSubject.name;
-        const staffWithSubject = availableStaff.filter(staff => 
-          staff.subjects && staff.subjects.includes(subjectName)
-        );
-        setFilteredStaff(staffWithSubject);
-      }
+    // Filter staff based on selected subject (by subject ID, not name)
+    if (formData.subjectId && availableStaff.length > 0) {
+      console.log("Filtering staff for subject ID:", formData.subjectId);
+      const staffWithSubject = availableStaff.filter(staff => 
+        staff.subjects && staff.subjects.includes(formData.subjectId)
+      );
+      console.log("Staff with this subject:", staffWithSubject);
+      setFilteredStaff(staffWithSubject);
     } else {
-      setFilteredStaff(availableStaff);
+      setFilteredStaff([]);
     }
-  }, [formData.subjectId, availableSubjects, availableStaff]);
+  }, [formData.subjectId, availableStaff]);
 
   const fetchData = async () => {
     setLoadingData(true);
@@ -70,7 +69,6 @@ const AddClassModal = ({ isOpen, onClose, department, semester, onRefresh }: Add
         supabase
           .from('staff')
           .select('*')
-          .eq('department', department)
           .eq('is_active', true),
         supabase
           .from('classrooms')
@@ -99,7 +97,7 @@ const AddClassModal = ({ isOpen, onClose, department, semester, onRefresh }: Add
     "08:00-09:00", "09:00-10:00", "10:15-11:15", 
     "11:15-12:15", "13:00-14:00", "14:00-15:00", "15:15-16:15"
   ];
-  const years = ["1", "2", "3", "4"];
+  
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -109,7 +107,7 @@ const AddClassModal = ({ isOpen, onClose, department, semester, onRefresh }: Add
     e.preventDefault();
     setIsSubmitting(true);
     
-    const requiredFields = ['subjectId', 'staffId', 'classroomId', 'studentGroup', 'year', 'day', 'timeSlot'];
+    const requiredFields = ['subjectId', 'staffId', 'classroomId', 'studentGroup', 'day', 'timeSlot'];
     const missingFields = requiredFields.filter(field => !formData[field as keyof typeof formData]);
     
     if (missingFields.length > 0) {
@@ -142,9 +140,8 @@ const AddClassModal = ({ isOpen, onClose, department, semester, onRefresh }: Add
         staffId: "",
         classroomId: "",
         studentGroup: "",
-        year: "",
-        day: "",
-        timeSlot: ""
+        day: day || "",
+        timeSlot: timeSlot || ""
       });
       onRefresh();
       onClose();
@@ -257,55 +254,13 @@ const AddClassModal = ({ isOpen, onClose, department, semester, onRefresh }: Add
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="space-y-2">
-                      <Label>Year *</Label>
-                      <Select value={formData.year} onValueChange={(value) => handleInputChange("year", value)}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select Year" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {years.map((year) => (
-                            <SelectItem key={year} value={year}>
-                              {year} Year
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                  {day && timeSlot && (
+                    <div className="p-3 bg-muted rounded-lg">
+                      <p className="text-sm">
+                        <strong>Selected Slot:</strong> {day} at {timeSlot}
+                      </p>
                     </div>
-
-                    <div className="space-y-2">
-                      <Label>Day *</Label>
-                      <Select value={formData.day} onValueChange={(value) => handleInputChange("day", value)}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select Day" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {days.map((day) => (
-                            <SelectItem key={day} value={day}>
-                              {day}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label>Time Slot *</Label>
-                      <Select value={formData.timeSlot} onValueChange={(value) => handleInputChange("timeSlot", value)}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select Time" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {timeSlots.map((slot) => (
-                            <SelectItem key={slot} value={slot}>
-                              {slot}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
+                  )}
 
                   <div className="flex gap-3 pt-4">
                     <Button
