@@ -13,6 +13,7 @@ import Profile from "./pages/Profile";
 import Issues from "./pages/Issues";
 import TimetableView from "./pages/TimetableView";
 import StaffManagement from "./pages/StaffManagement";
+import StaffManagementTest from "./pages/StaffManagementTest";
 import ClassroomManagement from "./pages/ClassroomManagement";
 import ConflictResolution from "./pages/ConflictResolution";
 import NotFound from "./pages/NotFound";
@@ -90,6 +91,11 @@ const App = () => (
                 <Route path="/staff" element={
                   <AuthGuard>
                     <StaffManagement />
+                  </AuthGuard>
+                } />
+                <Route path="/staff-test" element={
+                  <AuthGuard>
+                    <StaffManagementTest />
                   </AuthGuard>
                 } />
                 <Route path="/classrooms" element={

@@ -146,12 +146,15 @@ const StaffManagement = () => {
 
   const fetchStaff = async () => {
     try {
+      console.log('Fetching staff data...');
       const { data: staffResult, error: staffError } = await supabase
         .from('staff')
         .select('*')
         .order('name');
 
       if (staffError) throw staffError;
+
+      console.log('Raw staff data from database:', staffResult);
 
       // Fetch tutor assignments for each staff member
       const staffWithTutors = await Promise.all(
@@ -162,13 +165,17 @@ const StaffManagement = () => {
             .eq('staff_id', staff.id)
             .eq('is_active', true);
 
-          return {
+          const staffWithTutorInfo = {
             ...staff,
             tutor_assignments: tutorAssignments || []
           };
+          
+          console.log(`Staff ${staff.name} subjects:`, staff.subjects);
+          return staffWithTutorInfo;
         })
       );
 
+      console.log('Final staff data with tutors:', staffWithTutors);
       setStaffData(staffWithTutors);
     } catch (error: any) {
       console.error('Error fetching staff:', error);
@@ -182,19 +189,21 @@ const StaffManagement = () => {
 
   const fetchSubjects = async () => {
     try {
+      console.log('Fetching subjects data...');
       const { data, error } = await supabase
         .from('subjects')
         .select('*')
         .eq('is_active', true);
 
       if (error) throw error;
+      console.log('Subjects data from database:', data);
       setSubjects(data || []);
     } catch (error: any) {
       console.error('Error fetching subjects:', error);
     }
   };
 
-  const departments = ["all", "CSE", "ECE", "MECH", "CIVIL", "EEE"];
+  const departments = ["all", "CSE", "ECE", "MECH", "CIVIL", "EEE", "Mathematics"];
 
   const filteredStaff = staffData.filter(staff => {
     const matchesSearch = staff.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -644,14 +653,21 @@ const StaffManagement = () => {
                   <div>
                     <p className="text-sm font-medium text-foreground mb-2">Assigned Subjects:</p>
                     <div className="flex flex-wrap gap-1">
-                      {staff.subjects.map((subjectId, idx) => {
-                        const subject = subjects.find(s => s.id === subjectId);
-                        return (
-                          <Badge key={idx} variant="secondary" className="text-xs bg-muted text-muted-foreground">
-                            {subject ? `${subject.name} (${subject.code})` : subjectId}
-                          </Badge>
-                        );
-                      })}
+                      {staff.subjects && staff.subjects.length > 0 ? (
+                        staff.subjects.map((subjectId, idx) => {
+                          const subject = subjects.find(s => s.id === subjectId);
+                          console.log(`Rendering subject for ${staff.name}:`, subjectId, subject);
+                          return (
+                            <Badge key={idx} variant="secondary" className="text-xs bg-muted text-muted-foreground">
+                              {subject ? `${subject.name} (${subject.code})` : `Unknown Subject (${subjectId})`}
+                            </Badge>
+                          );
+                        })
+                      ) : (
+                        <Badge variant="outline" className="text-xs text-muted-foreground">
+                          No subjects assigned
+                        </Badge>
+                      )}
                     </div>
                   </div>
                 </CardContent>
