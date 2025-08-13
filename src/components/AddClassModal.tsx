@@ -38,6 +38,16 @@ const AddClassModal = ({ isOpen, onClose, department, semester, year, onRefresh,
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
+    if (day && timeSlot) {
+      setFormData(prev => ({
+        ...prev,
+        day: day,
+        timeSlot: timeSlot
+      }));
+    }
+  }, [day, timeSlot]);
+
+  useEffect(() => {
     if (isOpen) {
       fetchData();
     }
@@ -108,7 +118,7 @@ const AddClassModal = ({ isOpen, onClose, department, semester, year, onRefresh,
     e.preventDefault();
     setIsSubmitting(true);
     
-    const requiredFields = ['subjectId', 'staffId', 'classroomId', 'studentGroup', 'day', 'timeSlot'];
+    const requiredFields = ['subjectId', 'staffId', 'classroomId', 'studentGroup'];
     const missingFields = requiredFields.filter(field => !formData[field as keyof typeof formData]);
     
     if (missingFields.length > 0) {
