@@ -14,12 +14,13 @@ interface AddClassModalProps {
   onClose: () => void;
   department: string;
   semester: string;
+  year: string;
   onRefresh: () => void;
   day?: string;
   timeSlot?: string;
 }
 
-const AddClassModal = ({ isOpen, onClose, department, semester, onRefresh, day, timeSlot }: AddClassModalProps) => {
+const AddClassModal = ({ isOpen, onClose, department, semester, year, onRefresh, day, timeSlot }: AddClassModalProps) => {
   const [formData, setFormData] = useState({
     subjectId: "",
     staffId: "",
@@ -119,8 +120,29 @@ const AddClassModal = ({ isOpen, onClose, department, semester, onRefresh, day, 
     try {
       const selectedSubject = availableSubjects.find(s => s.id === formData.subjectId);
       
+      // Determine the table based on year
+      const yearNum = parseInt(year);
+      let tableName: any;
+      
+      switch(yearNum) {
+        case 1:
+          tableName = 'timetable_year_1';
+          break;
+        case 2:
+          tableName = 'timetable_year_2';
+          break;
+        case 3:
+          tableName = 'timetable_year_3';
+          break;
+        case 4:
+          tableName = 'timetable_year_4';
+          break;
+        default:
+          tableName = 'timetable_entries';
+      }
+      
       const { error } = await supabase
-        .from('timetable_entries')
+        .from(tableName)
         .insert([{
           subject_code: selectedSubject?.code,
           staff_id: formData.staffId,

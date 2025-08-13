@@ -29,7 +29,7 @@ interface TutorAssignment {
   id: string;
   classroom: string;
   academic_year: string;
-  semester: string;
+  year_group: string;
   is_active: boolean;
   department: string;
 }
@@ -38,13 +38,13 @@ const TutorAssignmentModal = ({ staffId, staffName, department, isOpen, onClose,
   const [classrooms, setClassrooms] = useState<Classroom[]>([]);
   const [selectedClassroom, setSelectedClassroom] = useState("");
   const [academicYear, setAcademicYear] = useState("2024-25");
-  const [semester, setSemester] = useState("1");
+  const [yearGroup, setYearGroup] = useState("1st Year");
   const [existingAssignments, setExistingAssignments] = useState<TutorAssignment[]>([]);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
-  const academicYears = ["2024-25", "2025-26", "2026-27"];
-  const semesters = ["1", "2", "3", "4", "5", "6", "7", "8"];
+const academicYears = ["2024-2028", "2025-2029", "2026-2030"];
+  const yearGroups = ["1st Year", "2-4th Year"];
 
   useEffect(() => {
     if (isOpen) {
@@ -95,7 +95,7 @@ const TutorAssignmentModal = ({ staffId, staffName, department, isOpen, onClose,
     try {
       const { data, error } = await supabase
         .from('tutor_assignments')
-        .select('id, classroom, academic_year, semester, is_active, department')
+        .select('id, classroom, academic_year, year_group, is_active, department')
         .eq('staff_id', staffId)
         .eq('is_active', true);
 
@@ -150,7 +150,7 @@ const TutorAssignmentModal = ({ staffId, staffName, department, isOpen, onClose,
           classroom: selectedClassroom,
           department,
           academic_year: academicYear,
-          semester,
+          year_group: yearGroup,
           assigned_by: (await supabase.auth.getUser()).data.user?.id,
           is_active: true
         });
@@ -235,9 +235,9 @@ const TutorAssignmentModal = ({ staffId, staffName, department, isOpen, onClose,
                         <Building className="h-4 w-4 text-muted-foreground" />
                         <div>
                           <p className="font-medium">{assignment.classroom}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {assignment.academic_year} - Semester {assignment.semester}
-                          </p>
+                           <p className="text-sm text-muted-foreground">
+                             {assignment.academic_year} - {assignment.year_group}
+                           </p>
                         </div>
                       </div>
                       <Button
@@ -274,21 +274,21 @@ const TutorAssignmentModal = ({ staffId, staffName, department, isOpen, onClose,
                   </Select>
                 </div>
 
-                <div className="space-y-2">
-                  <Label>Semester</Label>
-                  <Select value={semester} onValueChange={setSemester}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {semesters.map((sem) => (
-                        <SelectItem key={sem} value={sem}>
-                          Semester {sem}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                 <div className="space-y-2">
+                   <Label>Year Group</Label>
+                   <Select value={yearGroup} onValueChange={setYearGroup}>
+                     <SelectTrigger>
+                       <SelectValue />
+                     </SelectTrigger>
+                     <SelectContent>
+                       {yearGroups.map((group) => (
+                         <SelectItem key={group} value={group}>
+                           {group}
+                         </SelectItem>
+                       ))}
+                     </SelectContent>
+                   </Select>
+                 </div>
               </div>
 
               <div className="space-y-2">

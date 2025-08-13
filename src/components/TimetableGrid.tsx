@@ -14,10 +14,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { supabase } from "@/integrations/supabase/client";
 
 interface TimetableGridProps {
   department: string;
   semester: string;
+  year: string;
   viewMode: string;
   onAddClass?: (day: string, timeSlot: string) => void;
   onEditClass?: (entryId: string) => void;
@@ -43,6 +45,7 @@ interface TimetableEntry {
 const TimetableGrid = ({ 
   department, 
   semester, 
+  year,
   viewMode, 
   onAddClass,
   onEditClass,
@@ -79,13 +82,63 @@ const TimetableGrid = ({
   }, []);
 
   useEffect(() => {
+    fetchTimetableData();
+  }, [department, semester, year, viewMode]);
+
+  const fetchTimetableData = async () => {
     setIsLoading(true);
-    // Simulate API call
-    setTimeout(() => {
-      setTimetableData(mockTimetableData);
+    try {
+      const yearNum = parseInt(year);
+      let tableName: any;
+      
+      switch(yearNum) {
+        case 1:
+          tableName = 'timetable_year_1';
+          break;
+        case 2:
+          tableName = 'timetable_year_2';
+          break;
+        case 3:
+          tableName = 'timetable_year_3';
+          break;
+        case 4:
+          tableName = 'timetable_year_4';
+          break;
+        default:
+          tableName = 'timetable_entries';
+      }
+      
+      const { data, error } = await supabase
+        .from(tableName)
+        .select('*')
+        .eq('department', department)
+        .eq('semester', semester);
+
+      if (error) throw error;
+
+      const formattedData = (data || []).map((entry: any) => ({
+        id: entry.id,
+        day: entry.day,
+        timeSlot: entry.time_slot,
+        subject: "Subject Name", // Will be fetched separately
+        subjectCode: entry.subject_code || "N/A",
+        staff: "Staff Name", // Will be fetched separately
+        staffRole: "Staff Role",
+        classroom: "Classroom Name", // Will be fetched separately
+        studentGroup: entry.student_group,
+        type: "theory",
+        duration: 1,
+        hasConflict: false
+      }));
+
+      setTimetableData(formattedData);
+    } catch (error) {
+      console.error('Error fetching timetable data:', error);
+      setTimetableData([]);
+    } finally {
       setIsLoading(false);
-    }, 1000);
-  }, [department, semester, viewMode]);
+    }
+  };
 
   const isTimeSlotCoveredByEntry = (entry: TimetableEntry, timeSlot: string): boolean => {
     if (!entry.duration || entry.duration <= 1) return false;

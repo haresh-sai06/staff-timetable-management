@@ -172,6 +172,7 @@ export type Database = {
       }
       subjects: {
         Row: {
+          academic_year: string | null
           code: string
           credits: number
           department: string
@@ -184,6 +185,7 @@ export type Database = {
           year: number | null
         }
         Insert: {
+          academic_year?: string | null
           code: string
           credits: number
           department: string
@@ -196,6 +198,7 @@ export type Database = {
           year?: number | null
         }
         Update: {
+          academic_year?: string | null
           code?: string
           credits?: number
           department?: string
@@ -270,6 +273,162 @@ export type Database = {
           },
         ]
       }
+      timetable_year_1: {
+        Row: {
+          classroom_id: string | null
+          created_at: string | null
+          day: string
+          department: string
+          id: string
+          semester: string
+          staff_id: string | null
+          student_group: string
+          subject_code: string | null
+          time_slot: string
+        }
+        Insert: {
+          classroom_id?: string | null
+          created_at?: string | null
+          day: string
+          department: string
+          id?: string
+          semester: string
+          staff_id?: string | null
+          student_group: string
+          subject_code?: string | null
+          time_slot: string
+        }
+        Update: {
+          classroom_id?: string | null
+          created_at?: string | null
+          day?: string
+          department?: string
+          id?: string
+          semester?: string
+          staff_id?: string | null
+          student_group?: string
+          subject_code?: string | null
+          time_slot?: string
+        }
+        Relationships: []
+      }
+      timetable_year_2: {
+        Row: {
+          classroom_id: string | null
+          created_at: string | null
+          day: string
+          department: string
+          id: string
+          semester: string
+          staff_id: string | null
+          student_group: string
+          subject_code: string | null
+          time_slot: string
+        }
+        Insert: {
+          classroom_id?: string | null
+          created_at?: string | null
+          day: string
+          department: string
+          id?: string
+          semester: string
+          staff_id?: string | null
+          student_group: string
+          subject_code?: string | null
+          time_slot: string
+        }
+        Update: {
+          classroom_id?: string | null
+          created_at?: string | null
+          day?: string
+          department?: string
+          id?: string
+          semester?: string
+          staff_id?: string | null
+          student_group?: string
+          subject_code?: string | null
+          time_slot?: string
+        }
+        Relationships: []
+      }
+      timetable_year_3: {
+        Row: {
+          classroom_id: string | null
+          created_at: string | null
+          day: string
+          department: string
+          id: string
+          semester: string
+          staff_id: string | null
+          student_group: string
+          subject_code: string | null
+          time_slot: string
+        }
+        Insert: {
+          classroom_id?: string | null
+          created_at?: string | null
+          day: string
+          department: string
+          id?: string
+          semester: string
+          staff_id?: string | null
+          student_group: string
+          subject_code?: string | null
+          time_slot: string
+        }
+        Update: {
+          classroom_id?: string | null
+          created_at?: string | null
+          day?: string
+          department?: string
+          id?: string
+          semester?: string
+          staff_id?: string | null
+          student_group?: string
+          subject_code?: string | null
+          time_slot?: string
+        }
+        Relationships: []
+      }
+      timetable_year_4: {
+        Row: {
+          classroom_id: string | null
+          created_at: string | null
+          day: string
+          department: string
+          id: string
+          semester: string
+          staff_id: string | null
+          student_group: string
+          subject_code: string | null
+          time_slot: string
+        }
+        Insert: {
+          classroom_id?: string | null
+          created_at?: string | null
+          day: string
+          department: string
+          id?: string
+          semester: string
+          staff_id?: string | null
+          student_group: string
+          subject_code?: string | null
+          time_slot: string
+        }
+        Update: {
+          classroom_id?: string | null
+          created_at?: string | null
+          day?: string
+          department?: string
+          id?: string
+          semester?: string
+          staff_id?: string | null
+          student_group?: string
+          subject_code?: string | null
+          time_slot?: string
+        }
+        Relationships: []
+      }
       tutor_assignments: {
         Row: {
           academic_year: string
@@ -279,8 +438,8 @@ export type Database = {
           department: string
           id: string
           is_active: boolean
-          semester: string
           staff_id: string
+          year_group: string
         }
         Insert: {
           academic_year: string
@@ -290,8 +449,8 @@ export type Database = {
           department: string
           id?: string
           is_active?: boolean
-          semester: string
           staff_id: string
+          year_group?: string
         }
         Update: {
           academic_year?: string
@@ -301,8 +460,8 @@ export type Database = {
           department?: string
           id?: string
           is_active?: boolean
-          semester?: string
           staff_id?: string
+          year_group?: string
         }
         Relationships: [
           {

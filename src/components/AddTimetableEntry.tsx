@@ -155,7 +155,7 @@ const AddTimetableEntry = ({ onClose, department, semester }: AddTimetableEntryP
     e.preventDefault();
     setIsSubmitting(true);
     
-    const requiredFields = ['subjectId', 'staff', 'classroom', 'studentGroup', 'day', 'timeSlot'];
+    const requiredFields = ['subjectId', 'staff', 'classroom', 'studentGroup'];
     const missingFields = requiredFields.filter(field => !formData[field as keyof typeof formData]);
     
     if (missingFields.length > 0) {
@@ -168,8 +168,29 @@ const AddTimetableEntry = ({ onClose, department, semester }: AddTimetableEntryP
       const staff = availableStaff.find(s => s.id === formData.staff);
       const classroom = availableClassrooms.find(c => c.id === formData.classroom);
       
+      // Determine the table based on year
+      const year = parseInt(formData.year);
+      let tableName: any;
+      
+      switch(year) {
+        case 1:
+          tableName = 'timetable_year_1';
+          break;
+        case 2:
+          tableName = 'timetable_year_2';
+          break;
+        case 3:
+          tableName = 'timetable_year_3';
+          break;
+        case 4:
+          tableName = 'timetable_year_4';
+          break;
+        default:
+          tableName = 'timetable_entries';
+      }
+      
       const { error } = await supabase
-        .from('timetable_entries')
+        .from(tableName)
         .insert([{
           subject_code: formData.subjectCode,
           staff_id: staff?.id,

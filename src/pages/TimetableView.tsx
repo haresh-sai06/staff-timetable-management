@@ -331,6 +331,7 @@ const TimetableView = () => {
               <TimetableGrid
                 department={selectedDepartment}
                 semester={selectedSemester}
+                year={selectedYear}
                 viewMode={viewMode}
                 onAddClass={handleAddClassFromGrid}
                 onEditClass={handleEditClassFromGrid}
@@ -384,7 +385,8 @@ const TimetableView = () => {
         isOpen={showAddClassModal}
         onClose={() => setShowAddClassModal(false)}
         department={selectedDepartment}
-        semester="Current"
+        semester={selectedSemester}
+        year={selectedYear}
         onRefresh={() => {}}
         day={addClassContext.day}
         timeSlot={addClassContext.timeSlot}

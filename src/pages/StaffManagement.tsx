@@ -28,7 +28,7 @@ interface Staff {
     id: string;
     classroom: string;
     academic_year: string;
-    semester: string;
+    year_group: string;
   }>;
 }
 
@@ -161,7 +161,7 @@ const StaffManagement = () => {
         (staffResult || []).map(async (staff) => {
           const { data: tutorAssignments } = await supabase
             .from('tutor_assignments')
-            .select('id, classroom, academic_year, semester')
+            .select('id, classroom, academic_year, year_group')
             .eq('staff_id', staff.id)
             .eq('is_active', true);
 
