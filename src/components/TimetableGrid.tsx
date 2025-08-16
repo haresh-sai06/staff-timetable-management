@@ -116,19 +116,54 @@ const TimetableGrid = ({
 
       if (error) throw error;
 
-      const formattedData = (data || []).map((entry: any) => ({
-        id: entry.id,
-        day: entry.day,
-        timeSlot: entry.time_slot,
-        subject: "Subject Name", // Will be fetched separately
-        subjectCode: entry.subject_code || "N/A",
-        staff: "Staff Name", // Will be fetched separately
-        staffRole: "Staff Role",
-        classroom: "Classroom Name", // Will be fetched separately
-        studentGroup: entry.student_group,
-        type: "theory",
-        duration: 1,
-        hasConflict: false
+      // Fetch related data for each entry
+      const formattedData = await Promise.all((data || []).map(async (entry: any) => {
+        let subject, staff, classroom;
+        
+        // Fetch subject details
+        if (entry.subject_code) {
+          const { data: subjectData } = await supabase
+            .from('subjects')
+            .select('name, code, type')
+            .eq('code', entry.subject_code)
+            .single();
+          subject = subjectData;
+        }
+        
+        // Fetch staff details
+        if (entry.staff_id) {
+          const { data: staffData } = await supabase
+            .from('staff')
+            .select('name, role')
+            .eq('id', entry.staff_id)
+            .single();
+          staff = staffData;
+        }
+        
+        // Fetch classroom details
+        if (entry.classroom_id) {
+          const { data: classroomData } = await supabase
+            .from('classrooms')
+            .select('name, type')
+            .eq('id', entry.classroom_id)
+            .single();
+          classroom = classroomData;
+        }
+
+        return {
+          id: entry.id,
+          day: entry.day,
+          timeSlot: entry.time_slot,
+          subject: subject?.name || "Unknown Subject",
+          subjectCode: subject?.code || entry.subject_code || "N/A",
+          staff: staff?.name || "Unknown Staff",
+          staffRole: staff?.role || "Unknown Role",
+          classroom: classroom?.name || "Unknown Classroom",
+          studentGroup: entry.student_group,
+          type: subject?.type || "theory",
+          duration: 1,
+          hasConflict: false
+        };
       }));
 
       setTimetableData(formattedData);

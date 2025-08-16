@@ -310,7 +310,22 @@ export type Database = {
           subject_code?: string | null
           time_slot?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_timetable_year_1_classroom"
+            columns: ["classroom_id"]
+            isOneToOne: false
+            referencedRelation: "classrooms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_timetable_year_1_staff"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       timetable_year_2: {
         Row: {
@@ -349,7 +364,22 @@ export type Database = {
           subject_code?: string | null
           time_slot?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_timetable_year_2_classroom"
+            columns: ["classroom_id"]
+            isOneToOne: false
+            referencedRelation: "classrooms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_timetable_year_2_staff"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       timetable_year_3: {
         Row: {
@@ -388,7 +418,22 @@ export type Database = {
           subject_code?: string | null
           time_slot?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_timetable_year_3_classroom"
+            columns: ["classroom_id"]
+            isOneToOne: false
+            referencedRelation: "classrooms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_timetable_year_3_staff"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       timetable_year_4: {
         Row: {
@@ -427,7 +472,22 @@ export type Database = {
           subject_code?: string | null
           time_slot?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_timetable_year_4_classroom"
+            columns: ["classroom_id"]
+            isOneToOne: false
+            referencedRelation: "classrooms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_timetable_year_4_staff"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       tutor_assignments: {
         Row: {

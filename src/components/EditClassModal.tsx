@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { toast as sonnerToast } from "sonner";
 import type { Tables } from "@/integrations/supabase/types";
 
 interface EditClassModalProps {
@@ -16,102 +17,134 @@ interface EditClassModalProps {
   onClose: () => void;
   entryId: string;
   department: string;
+  semester?: string;
+  year?: string;
+  onRefresh?: () => void;
 }
 
 interface ClassEntry {
   id: string;
   subjectId: string;
-  subjectName: string;
-  subjectCode: string;
-  subjectType: string;
-  labDuration: number;
-  staff: string;
-  classroom: string;
+  staffId: string;
+  classroomId: string;
   studentGroup: string;
-  year: string;
   day: string;
   timeSlot: string;
-  type: string;
+  semester: string;
+  department: string;
 }
 
-const EditClassModal = ({ isOpen, onClose, entryId, department }: EditClassModalProps) => {
+const EditClassModal = ({ isOpen, onClose, entryId, department, semester = "odd", year = "3", onRefresh }: EditClassModalProps) => {
   const [formData, setFormData] = useState<ClassEntry>({
     id: "",
     subjectId: "",
-    subjectName: "",
-    subjectCode: "",
-    subjectType: "",
-    labDuration: 0,
-    staff: "",
-    classroom: "",
+    staffId: "",
+    classroomId: "",
     studentGroup: "",
-    year: "",
     day: "",
     timeSlot: "",
-    type: "theory"
+    semester,
+    department
   });
   const [availableSubjects, setAvailableSubjects] = useState<Tables<"subjects">[]>([]);
-  const [loadingSubjects, setLoadingSubjects] = useState(true);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [availableStaff, setAvailableStaff] = useState<Tables<"staff">[]>([]);
+  const [availableClassrooms, setAvailableClassrooms] = useState<Tables<"classrooms">[]>([]);
+  const [filteredStaff, setFilteredStaff] = useState<Tables<"staff">[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
     if (isOpen && entryId) {
+      fetchData();
       fetchClassData();
-      fetchSubjects();
     }
-  }, [isOpen, entryId]);
+  }, [isOpen, entryId, department]);
 
-  const fetchSubjects = async () => {
-    setLoadingSubjects(true);
+  useEffect(() => {
+    if (formData.subjectId) {
+      const filtered = availableStaff.filter(staff => 
+        staff.subjects && staff.subjects.includes(formData.subjectId)
+      );
+      setFilteredStaff(filtered);
+    } else {
+      setFilteredStaff(availableStaff);
+    }
+  }, [formData.subjectId, availableStaff]);
+
+  const fetchData = async () => {
     try {
-      const { data, error } = await supabase
-        .from('subjects')
-        .select('*')
-        .eq('department', department)
-        .eq('is_active', true)
-        .order('name');
+      const [subjectsResponse, staffResponse, classroomsResponse] = await Promise.all([
+        supabase
+          .from('subjects')
+          .select('*')
+          .eq('department', department)
+          .eq('is_active', true)
+          .order('name'),
+        supabase
+          .from('staff')
+          .select('*')
+          .eq('is_active', true)
+          .order('name'),
+        supabase
+          .from('classrooms')
+          .select('*')
+          .eq('is_active', true)
+          .order('name')
+      ]);
 
-      if (error) throw error;
-      setAvailableSubjects(data || []);
+      if (subjectsResponse.error) throw subjectsResponse.error;
+      if (staffResponse.error) throw staffResponse.error;
+      if (classroomsResponse.error) throw classroomsResponse.error;
+
+      setAvailableSubjects(subjectsResponse.data || []);
+      setAvailableStaff(staffResponse.data || []);
+      setAvailableClassrooms(classroomsResponse.data || []);
     } catch (error: any) {
-      console.error('Error fetching subjects:', error);
+      console.error('Error fetching data:', error);
       toast({
         title: "Error",
-        description: "Failed to fetch subjects",
+        description: "Failed to fetch data",
         variant: "destructive",
       });
-    } finally {
-      setLoadingSubjects(false);
     }
   };
 
   const fetchClassData = async () => {
     setIsLoading(true);
     try {
-      // Simulate API call to fetch class data
-      // In real implementation, this would fetch from your database
-      await new Promise(resolve => setTimeout(resolve, 500));
+      const yearNum = parseInt(year);
+      let tableName: any;
       
-      // Mock data based on entryId - replace with actual API call
-      const mockData: ClassEntry = {
-        id: entryId,
-        subjectId: "1",
-        subjectName: "Data Structures",
-        subjectCode: "CS8391",
-        subjectType: "theory",
-        labDuration: 0,
-        staff: "Dr. Priya Sharma",
-        classroom: "CSE-101",
-        studentGroup: "CSE-3A",
-        year: "3",
-        day: "Monday",
-        timeSlot: "09:15-10:10",
-        type: "theory"
-      };
-      
-      setFormData(mockData);
+      switch(yearNum) {
+        case 1: tableName = 'timetable_year_1'; break;
+        case 2: tableName = 'timetable_year_2'; break;
+        case 3: tableName = 'timetable_year_3'; break;
+        case 4: tableName = 'timetable_year_4'; break;
+        default: tableName = 'timetable_entries';
+      }
+
+      const { data, error } = await supabase
+        .from(tableName)
+        .select('*')
+        .eq('id', entryId)
+        .single();
+
+      if (error) throw error;
+
+      if (data) {
+        setFormData({
+          id: (data as any).id || "",
+          subjectId: (data as any).subject_code || "",
+          staffId: (data as any).staff_id || "",
+          classroomId: (data as any).classroom_id || "",
+          studentGroup: (data as any).student_group || "",
+          day: (data as any).day || "",
+          timeSlot: (data as any).time_slot || "",
+          semester: (data as any).semester || semester,
+          department: (data as any).department || department
+        });
+      }
     } catch (error) {
       console.error("Error fetching class data:", error);
       toast({
@@ -129,21 +162,6 @@ const EditClassModal = ({ isOpen, onClose, entryId, department }: EditClassModal
       ...prev,
       [field]: value
     }));
-
-    // Auto-fill subject details when subject is selected
-    if (field === "subjectId") {
-      const selectedSubject = availableSubjects.find(s => s.id === value);
-      if (selectedSubject) {
-        setFormData(prev => ({ 
-          ...prev, 
-          subjectCode: selectedSubject.code || "",
-          subjectName: selectedSubject.name || "",
-          subjectType: selectedSubject.type || "",
-          labDuration: selectedSubject.lab_duration || 0,
-          year: selectedSubject.year?.toString() || "",
-        }));
-      }
-    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -151,25 +169,46 @@ const EditClassModal = ({ isOpen, onClose, entryId, department }: EditClassModal
     setIsSubmitting(true);
 
     try {
-      // Simulate API call - replace with actual implementation
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const yearNum = parseInt(year);
+      let tableName: any;
       
-      console.log("Updating class:", { ...formData, department });
+      switch(yearNum) {
+        case 1: tableName = 'timetable_year_1'; break;
+        case 2: tableName = 'timetable_year_2'; break;
+        case 3: tableName = 'timetable_year_3'; break;
+        case 4: tableName = 'timetable_year_4'; break;
+        default: tableName = 'timetable_entries';
+      }
+
+      const updateData = {
+        subject_code: formData.subjectId,
+        staff_id: formData.staffId,
+        classroom_id: formData.classroomId,
+        student_group: formData.studentGroup,
+        day: formData.day,
+        time_slot: formData.timeSlot,
+        semester: formData.semester,
+        department: formData.department
+      };
+
+      const { error } = await supabase
+        .from(tableName)
+        .update(updateData)
+        .eq('id', entryId);
+
+      if (error) throw error;
+
+      sonnerToast.success("Class updated successfully!");
       
-      toast({
-        title: "Class Updated",
-        description: `Successfully updated ${formData.subjectName}`,
-      });
+      if (onRefresh) {
+        onRefresh();
+      }
       
       onClose();
       
     } catch (error) {
       console.error("Error updating class:", error);
-      toast({
-        title: "Error",
-        description: "Failed to update class. Please try again.",
-        variant: "destructive",
-      });
+      sonnerToast.error("Failed to update class. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -215,98 +254,76 @@ const EditClassModal = ({ isOpen, onClose, entryId, department }: EditClassModal
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="subject" className="text-foreground">Subject Name</Label>
-                    {loadingSubjects ? (
-                      <div className="flex items-center justify-center p-3 border border-border rounded-md">
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-accent"></div>
-                        <span className="ml-2 text-sm">Loading subjects...</span>
-                      </div>
-                    ) : (
-                      <Select value={formData.subjectId} onValueChange={(value) => handleInputChange("subjectId", value)}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select subject" />
-                        </SelectTrigger>
-                        <SelectContent>
-  {availableSubjects.map((subject) => (
-    <SelectItem
-      key={subject.id}
-      value={subject.id}
-      className="flex items-center justify-between w-full"
-    >
-      <span className="truncate">{subject.name}</span>
-      <span className="flex items-center space-x-1 ml-2">
-        <Badge variant="outline" className="text-xs">
-          {subject.code}
-        </Badge>
-        <Badge variant="secondary" className="text-xs">
-          {subject.type}
-        </Badge>
-        {subject.type === "lab" && subject.lab_duration && (
-          <Badge variant="outline" className="text-xs">
-            {subject.lab_duration}P
-          </Badge>
-        )}
-      </span>
-    </SelectItem>
-  ))}
-</SelectContent>
+                    <Label htmlFor="subject" className="text-foreground">Subject</Label>
+                    <Select value={formData.subjectId} onValueChange={(value) => handleInputChange("subjectId", value)}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select subject" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {availableSubjects.map((subject) => (
+                          <SelectItem key={subject.id} value={subject.id}>
+                            <div className="flex items-center justify-between w-full">
+                              <span className="truncate">{subject.name}</span>
+                              <div className="flex items-center space-x-1 ml-2">
+                                <Badge variant="outline" className="text-xs">
+                                  {subject.code}
+                                </Badge>
+                                <Badge variant="secondary" className="text-xs">
+                                  {subject.type}
+                                </Badge>
+                              </div>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-                      </Select>
-                    )}
-                  </div>
-                  
-                  
                   <div>
-                    <Label htmlFor="subjectCode" className="text-foreground">Subject Code</Label>
-                    <Input
-                      id="subjectCode"
-                      value={formData.subjectCode}
-                      readOnly
-                      placeholder="e.g., CS8391"
-                      className="bg-muted"
-                    />
+                    <Label htmlFor="staff" className="text-foreground">Staff</Label>
+                    <Select value={formData.staffId} onValueChange={(value) => handleInputChange("staffId", value)}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select staff" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {filteredStaff.map((staff) => (
+                          <SelectItem key={staff.id} value={staff.id}>
+                            <div className="flex items-center justify-between w-full">
+                              <span className="truncate">{staff.name}</span>
+                              <Badge variant="outline" className="text-xs ml-2">
+                                {staff.role}
+                              </Badge>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
-                </div>
-                
-                {formData.subjectId && (
-                  <div className="p-3 bg-muted/30 rounded-lg">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="font-medium text-foreground">{formData.subjectName}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {formData.subjectType === 'lab' ? `Lab Subject (${formData.labDuration} periods)` : 'Theory Subject'}
-                        </p>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Badge variant="outline">{formData.year} Year</Badge>
-                        <Badge variant="secondary">{formData.subjectType}</Badge>
-                      </div>
-                    </div>
-                  </div>
-                )}
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  
-                  <div>
-                    <Label htmlFor="staff" className="text-foreground">Staff Name</Label>
-                    <Input
-                      id="staff"
-                      value={formData.staff}
-                      onChange={(e) => handleInputChange("staff", e.target.value)}
-                      placeholder="e.g., Dr. John Doe"
-                      required
-                    />
-                  </div>
-                  
+
                   <div>
                     <Label htmlFor="classroom" className="text-foreground">Classroom</Label>
-                    <Input
-                      id="classroom"
-                      value={formData.classroom}
-                      onChange={(e) => handleInputChange("classroom", e.target.value)}
-                      placeholder="e.g., CSE-101"
-                      required
-                    />
+                    <Select value={formData.classroomId} onValueChange={(value) => handleInputChange("classroomId", value)}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select classroom" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {availableClassrooms.map((classroom) => (
+                          <SelectItem key={classroom.id} value={classroom.id}>
+                            <div className="flex items-center justify-between w-full">
+                              <span className="truncate">{classroom.name}</span>
+                              <div className="flex items-center space-x-1 ml-2">
+                                <Badge variant="outline" className="text-xs">
+                                  {classroom.type}
+                                </Badge>
+                                <Badge variant="secondary" className="text-xs">
+                                  {classroom.capacity}
+                                </Badge>
+                              </div>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                   
                   <div>
@@ -321,75 +338,47 @@ const EditClassModal = ({ isOpen, onClose, entryId, department }: EditClassModal
                   </div>
                   
                   <div>
-                    <Label htmlFor="year" className="text-foreground">Year</Label>
-                    <select
-                      id="year"
-                      value={formData.year}
-                      onChange={(e) => handleInputChange("year", e.target.value)}
-                      className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground"
-                      required
-                    >
-                      <option value="">Select Year</option>
-                      <option value="1">1st Year</option>
-                      <option value="2">2nd Year</option>
-                      <option value="3">3rd Year</option>
-                      <option value="4">4th Year</option>
-                    </select>
-                  </div>
-                  
-                  <div>
                     <Label htmlFor="day" className="text-foreground">Day</Label>
-                    <select
-                      id="day"
-                      value={formData.day}
-                      onChange={(e) => handleInputChange("day", e.target.value)}
-                      className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground"
-                      required
-                    >
-                      <option value="">Select Day</option>
-                      <option value="Monday">Monday</option>
-                      <option value="Tuesday">Tuesday</option>
-                      <option value="Wednesday">Wednesday</option>
-                      <option value="Thursday">Thursday</option>
-                      <option value="Friday">Friday</option>
-                      <option value="Saturday">Saturday</option>
-                    </select>
+                    <Select value={formData.day} onValueChange={(value) => handleInputChange("day", value)}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select Day" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Monday">Monday</SelectItem>
+                        <SelectItem value="Tuesday">Tuesday</SelectItem>
+                        <SelectItem value="Wednesday">Wednesday</SelectItem>
+                        <SelectItem value="Thursday">Thursday</SelectItem>
+                        <SelectItem value="Friday">Friday</SelectItem>
+                        <SelectItem value="Saturday">Saturday</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                   
                   <div>
                     <Label htmlFor="timeSlot" className="text-foreground">Time Slot</Label>
-                    <select
-                      id="timeSlot"
-                      value={formData.timeSlot}
-                      onChange={(e) => handleInputChange("timeSlot", e.target.value)}
-                      className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground"
-                      required
-                    >
-                      <option value="">Select Time</option>
-                      <option value="09:15-10:10">09:15-10:10 (Period 1)</option>
-                      <option value="10:10-11:05">10:10-11:05 (Period 2)</option>
-                      <option value="11:20-12:15">11:20-12:15 (Period 3)</option>
-                      <option value="13:00-13:55">13:00-13:55 (Period 4)</option>
-                      <option value="13:55-14:50">13:55-14:50 (Period 5)</option>
-                      <option value="14:50-15:45">14:50-15:45 (Period 6)</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="type" className="text-foreground">Class Type</Label>
-                    <select
-                      id="type"
-                      value={formData.type}
-                      onChange={(e) => handleInputChange("type", e.target.value)}
-                      className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground"
-                      required
-                    >
-                      <option value="theory">Theory</option>
-                      <option value="lab">Lab</option>
-                      <option value="tutorial">Tutorial</option>
-                    </select>
+                    <Select value={formData.timeSlot} onValueChange={(value) => handleInputChange("timeSlot", value)}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select Time Slot" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="09:15-10:10">09:15-10:10 (Period 1)</SelectItem>
+                        <SelectItem value="10:10-11:05">10:10-11:05 (Period 2)</SelectItem>
+                        <SelectItem value="11:20-12:15">11:20-12:15 (Period 3)</SelectItem>
+                        <SelectItem value="13:00-13:55">13:00-13:55 (Period 4)</SelectItem>
+                        <SelectItem value="13:55-14:50">13:55-14:50 (Period 5)</SelectItem>
+                        <SelectItem value="14:50-15:45">14:50-15:45 (Period 6)</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
+
+                {formData.day && formData.timeSlot && (
+                  <div className="p-3 bg-muted/30 rounded-lg">
+                    <p className="text-sm text-muted-foreground">
+                      Selected: {formData.day} at {formData.timeSlot}
+                    </p>
+                  </div>
+                )}
                 
                 <div className="flex justify-end space-x-2 pt-4">
                   <Button

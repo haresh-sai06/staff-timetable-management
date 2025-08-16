@@ -397,6 +397,9 @@ const TimetableView = () => {
         onClose={() => setEditClassContext({ entryId: "", isOpen: false })}
         entryId={editClassContext.entryId}
         department={selectedDepartment}
+        semester={selectedSemester}
+        year={selectedYear}
+        onRefresh={() => window.location.reload()}
       />
     </div>
   );
