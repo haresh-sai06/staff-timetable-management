@@ -478,6 +478,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      check_admin_permission: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
       get_current_user_role: {
         Args: Record<PropertyKey, never>
         Returns: string
