@@ -7,7 +7,7 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "12.2.3 (519615d)"
@@ -485,28 +485,28 @@ export type Database = {
       get_user_permissions: {
         Args: { user_id?: string }
         Returns: {
-          role: string
-          department: string
+          can_manage_classrooms: boolean
           can_manage_staff: boolean
           can_manage_timetables: boolean
           can_view_reports: boolean
-          can_manage_classrooms: boolean
+          department: string
+          role: string
         }[]
       }
       is_classroom_available: {
         Args: {
+          academic_year: string
           classroom_id: string
           day: string
-          start_time: string
           end_time: string
-          semester: string
-          academic_year: string
           exclude_entry_id?: string
+          semester: string
+          start_time: string
         }
         Returns: boolean
       }
       validate_staff_workload: {
-        Args: { staff_id: string; additional_hours?: number }
+        Args: { additional_hours?: number; staff_id: string }
         Returns: boolean
       }
     }
