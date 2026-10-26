@@ -1,5 +1,5 @@
 
-import { Subject, Staff, Classroom, StudentGroup, TimetableEntry, Conflict } from "./timetableScheduler";
+import type { Subject, Staff, Classroom, StudentGroup, TimetableEntry, Conflict } from "./timetableScheduler";
 
 export interface ValidationResult {
   isValid: boolean;
@@ -129,11 +129,17 @@ export class EnhancedTimetableValidator {
     return { isValid: conflicts.filter(c => c.severity === 'high').length === 0, conflicts, recommendations };
   }
 
+  // Omitted is_active means the resource is in use. Only an explicit false disables it,
+  // matching timetableScheduler and the staff checks in this class.
+  private isResourceActive(resource: { is_active?: boolean | null }): boolean {
+    return resource.is_active !== false;
+  }
+
   private validateClassroomRequirements(classrooms: Classroom[], subjects: Subject[], department: string): ValidationResult {
     const conflicts: Conflict[] = [];
     const recommendations: string[] = [];
     
-    const departmentClassrooms = classrooms.filter(c => c.department === department && c.is_active);
+    const departmentClassrooms = classrooms.filter(c => c.department === department && this.isResourceActive(c));
     const requirements = this.departmentRequirements.get(department);
     
     if (!requirements) return { isValid: true, conflicts, recommendations };
@@ -268,7 +274,7 @@ export class EnhancedTimetableValidator {
       const suitableClassrooms = classrooms.filter(c => 
         c.department === group.department && 
         c.capacity >= group.strength &&
-        c.is_active
+        this.isResourceActive(c)
       );
 
       if (suitableClassrooms.length === 0) {
@@ -290,7 +296,7 @@ export class EnhancedTimetableValidator {
 
     // For this validation, we'll check if there are enough staff to cover tutor assignments
     // In a real implementation, this would check against a tutor_assignments table
-    const departmentClassrooms = classrooms.filter(c => c.department === department && c.is_active);
+    const departmentClassrooms = classrooms.filter(c => c.department === department && this.isResourceActive(c));
     const availableStaff = staff.filter(s => s.department === department && s.is_active !== false);
 
     if (departmentClassrooms.length > availableStaff.length) {
