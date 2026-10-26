@@ -17,6 +17,8 @@ import ThemeToggle from "@/components/ThemeToggle";
 import ExportTimetable from "@/components/ExportTimetable";
 import EditClassModal from "../components/EditClassModal";
 import AddClassModal from "@/components/AddClassModal";
+import TimetableScheduleStatus from "@/components/TimetableScheduleStatus";
+import { resolveSchedulePhase } from "@/utils/timetableMotion";
 
 const TimetableView = () => {
   const [selectedDepartment, setSelectedDepartment] = useState("CSE");
@@ -68,6 +70,10 @@ const TimetableView = () => {
   ];
 
   const isAdmin = userRole === "admin";
+  const schedulePhase = resolveSchedulePhase({
+    isGenerating,
+    hasResult: generatedTimetable != null,
+  });
 
   const handleStaffSearch = async (query: string) => {
     setIsSearching(true);
@@ -249,6 +255,8 @@ const TimetableView = () => {
 
         <StaffSearchBar onSearch={handleStaffSearch} onClear={handleClearSearch} />
 
+        <TimetableScheduleStatus phase={schedulePhase} canGenerate={isAdmin} />
+
         {showAutoSchedule && (
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
@@ -323,11 +331,7 @@ const TimetableView = () => {
               />
             </motion.div>
 
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-            >
+            <div>
               <TimetableGrid
                 department={selectedDepartment}
                 semester={selectedSemester}
@@ -337,7 +341,7 @@ const TimetableView = () => {
                 onEditClass={handleEditClassFromGrid}
                 onDeleteClass={handleDeleteClassFromGrid}
               />
-            </motion.div>
+            </div>
           </TabsContent>
 
           <TabsContent value="department-year" className="space-y-6">
