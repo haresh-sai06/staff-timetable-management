@@ -10,6 +10,8 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import StaffAllocationForm from "./StaffAllocationForm";
+import TimetableScheduleStatus from "./TimetableScheduleStatus";
+import { resolveSchedulePhase } from "@/utils/timetableMotion";
 import type { Tables } from "@/integrations/supabase/types";
 
 interface AutoScheduleFormProps {
@@ -145,6 +147,13 @@ const AutoScheduleForm = ({ onGenerate, isGenerating, generatedTimetable, confli
           </CardTitle>
         </CardHeader>
         <CardContent>
+          <TimetableScheduleStatus
+            phase={resolveSchedulePhase({
+              isGenerating,
+              hasResult: Boolean(generatedTimetable),
+            })}
+            canGenerate
+          />
           <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
             <div className="flex items-center space-x-2 mb-3">
               <Settings className="h-4 w-4 text-blue-600 dark:text-blue-400" />

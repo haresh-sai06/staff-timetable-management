@@ -15,6 +15,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
+import { usePrefersReducedMotion } from "@/hooks/usePrefersReducedMotion";
+import { timetableEntranceMotion } from "@/utils/timetableMotion";
 
 interface TimetableGridProps {
   department: string;
@@ -59,6 +61,8 @@ const TimetableGrid = ({
     entryId: ""
   });
   const [hoveredSlot, setHoveredSlot] = useState<string | null>(null);
+  const prefersReducedMotion = usePrefersReducedMotion();
+  const entrance = timetableEntranceMotion(prefersReducedMotion);
 
   // Updated timing structure - 6 periods of 55 minutes each
   const timeSlots = [
@@ -231,26 +235,39 @@ const TimetableGrid = ({
 
   if (isLoading) {
     return (
-      <Card className="glassmorphism-card border-border">
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2 text-foreground">
-            <Clock className="h-5 w-5 text-accent" />
-            <span>Weekly Timetable</span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center justify-center h-64">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent"></div>
-          </div>
-        </CardContent>
-      </Card>
+      <motion.div
+        initial={{ opacity: entrance.initial.opacity, y: entrance.initial.y }}
+        animate={{ opacity: entrance.animate.opacity, y: entrance.animate.y }}
+        transition={{ duration: entrance.transition.duration, ease: entrance.transition.ease }}
+      >
+        <Card className="glassmorphism-card border-border">
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2 text-foreground">
+              <Clock className="h-5 w-5 text-accent" />
+              <span>Weekly Timetable</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-col items-center justify-center h-64 gap-3" role="status" aria-live="polite">
+              <div
+                className={`rounded-full h-8 w-8 border-b-2 border-accent ${prefersReducedMotion ? "" : "animate-spin"}`}
+                aria-hidden="true"
+              ></div>
+              <p className="text-sm font-medium text-foreground">Loading timetable</p>
+              <p className="text-sm text-muted-foreground">Fetching the saved schedule for this department and semester.</p>
+            </div>
+          </CardContent>
+        </Card>
+      </motion.div>
     );
   }
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
+      key={`${department}-${semester}-${year}-${viewMode}`}
+      initial={{ opacity: entrance.initial.opacity, y: entrance.initial.y }}
+      animate={{ opacity: entrance.animate.opacity, y: entrance.animate.y }}
+      transition={{ duration: entrance.transition.duration, ease: entrance.transition.ease }}
       className="space-y-6"
     >
       <Card className="glassmorphism-card border-border">
@@ -266,13 +283,8 @@ const TimetableGrid = ({
         <CardContent>
           {/* Mobile View */}
           <div className="block lg:hidden space-y-4">
-            {days.map((day, dayIndex) => (
-              <motion.div
-                key={day}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: dayIndex * 0.1 }}
-              >
+            {days.map((day) => (
+              <div key={day}>
                 <Card className="bg-card/60 border-border">
                   <CardContent className="p-4">
                     <h4 className="font-semibold text-lg text-accent mb-4">{day}</h4>
@@ -391,7 +403,7 @@ const TimetableGrid = ({
                     </div>
                   </CardContent>
                 </Card>
-              </motion.div>
+              </div>
             ))}
           </div>
 
@@ -412,12 +424,9 @@ const TimetableGrid = ({
                 </div>
 
                 {/* Time slots - Increased heights and spacing */}
-                {timeSlots.map((slot, index) => (
-                  <motion.div
+                {timeSlots.map((slot) => (
+                  <div
                     key={slot.time}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: index * 0.1 }}
                     className={`grid grid-cols-8 gap-3 mb-3 ${slot.isBreak ? 'opacity-70' : ''}`}
                   >
                     {/* Time column - Increased height */}
@@ -540,7 +549,7 @@ const TimetableGrid = ({
                         </div>
                       ))
                     )}
-                  </motion.div>
+                  </div>
                 ))}
               </div>
             </div>

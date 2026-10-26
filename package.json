@@ -9,7 +9,7 @@
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
     "preview": "vite preview",
-    "test": "node --experimental-strip-types --test src/utils/enhancedTimetableValidator.test.ts"
+    "test": "node --experimental-strip-types --test src/utils/enhancedTimetableValidator.test.ts src/utils/timetableMotion.test.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.0",
