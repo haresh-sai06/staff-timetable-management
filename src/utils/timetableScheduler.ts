@@ -68,6 +68,17 @@ export interface ScheduleResult {
   conflicts: Conflict[];
 }
 
+/** True when each slot starts at the previous slot's end. A break gap is not a continuous lab. */
+export function slotsAreBackToBack(slots: string[]): boolean {
+  if (slots.length === 0) return false;
+  for (let index = 1; index < slots.length; index++) {
+    const previousEnd = slots[index - 1]?.split("-")[1];
+    const nextStart = slots[index]?.split("-")[0];
+    if (!previousEnd || previousEnd !== nextStart) return false;
+  }
+  return true;
+}
+
 class TimetableScheduler {
   private days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
   
@@ -286,7 +297,10 @@ class TimetableScheduler {
     for (const day of this.days) {
       for (let i = 0; i <= preferredSlots.length - labDuration; i++) {
         const consecutiveSlots = preferredSlots.slice(i, i + labDuration);
-        
+        // Period 2 ends at 11:05 and period 3 starts at 11:20. Adjacent in the
+        // list is not enough; the lab must not swallow the morning break.
+        if (!slotsAreBackToBack(consecutiveSlots)) continue;
+
         // Enhanced availability check
         const allSlotsAvailable = consecutiveSlots.every(timeSlot => {
           const staffKey = `${day}-${timeSlot}-${availableStaff.id}`;
